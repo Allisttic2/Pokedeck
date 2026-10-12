@@ -1,6 +1,7 @@
 # Pokedeck
 
 About Pokedeck
+<br>
 Pokedeck is a free tracker for your Pokémon collection. Pick a game, tap a Pokémon to mark it as caught, and tap the ✨ to mark it as shiny.
 
 How it works
