@@ -5,19 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Pokedeck</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='14' y='22' width='46' height='64' rx='8' fill='%23ffd23f' stroke='%231d1d22' stroke-width='6' transform='rotate(-14 37 54)'/><rect x='34' y='14' width='46' height='64' rx='8' fill='%234361ee' stroke='%231d1d22' stroke-width='6' transform='rotate(8 57 46)'/><rect x='28' y='20' width='46' height='64' rx='8' fill='%23e63946' stroke='%231d1d22' stroke-width='6'/><circle cx='51' cy='52' r='9' fill='white' stroke='%231d1d22' stroke-width='5'/></svg>">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&family=Nunito:wght@500;700&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f3efe8;--card:#fff;--ink:#22232a;--mut:#767782;--red:#e63946;--red2:#b3202d;--ok:#2e9e5b;--bd:#e6e1d6;--gold:#f2b705;--sh:0 2px 8px rgba(30,20,10,.08)}
 @media (prefers-color-scheme:dark){:root{--bg:#14151a;--card:#212329;--ink:#f1f1f4;--mut:#9b9ca6;--bd:#34363e;--sh:0 2px 8px rgba(0,0,0,.4)}}
 *{box-sizing:border-box}
-body{margin:0;color:var(--ink);font:16px/1.4 Nunito,system-ui,-apple-system,"Segoe UI",sans-serif;
+body{margin:0;color:var(--ink);font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
  background:var(--bg) radial-gradient(circle at 1px 1px,rgba(120,110,90,.12) 1px,transparent 0) 0 0/22px 22px}
 .wrap{max-width:1000px;margin:0 auto}
 header{position:relative;overflow:hidden;color:#fff;padding:18px 16px 20px;
  background:linear-gradient(135deg,var(--red),var(--red2));border-bottom:6px solid #1d1d22;box-shadow:0 4px 16px rgba(0,0,0,.2)}
 header .wrap{position:relative;z-index:1}
-h1{display:flex;align-items:center;gap:10px;margin:0 0 12px;font:600 28px Fredoka,Nunito,system-ui,sans-serif;letter-spacing:.5px}
+h1{display:flex;align-items:center;gap:10px;margin:0 0 12px;font:600 28px ui-rounded,"SF Pro Rounded","Segoe UI Variable Display","Segoe UI",system-ui,-apple-system,Roboto,sans-serif;letter-spacing:.5px}
 .logo{width:34px;height:34px;flex:none}
 select,input{font:inherit;padding:11px 14px;border-radius:14px;border:2px solid transparent;background:var(--card);color:var(--ink);width:100%;box-shadow:var(--sh)}
 input{border-color:var(--bd)}
@@ -26,7 +24,7 @@ select:focus,input:focus{outline:none;border-color:var(--gold)}
 .bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#ffd23f,#fff3b0);transition:width .4s}
 #stat{margin-top:8px;font-weight:700;font-size:14px;text-shadow:0 1px 2px #0004}
 .tabs{display:flex;gap:6px;padding:14px 16px 10px;flex-wrap:wrap}
-.tabs button{flex:1 1 70px;padding:9px 12px;border:2px solid var(--bd);background:var(--card);color:var(--ink);border-radius:999px;font:600 15px Fredoka,Nunito,sans-serif;cursor:pointer;transition:.15s}
+.tabs button{flex:1 1 70px;padding:9px 12px;border:2px solid var(--bd);background:var(--card);color:var(--ink);border-radius:999px;font:600 15px ui-rounded,"SF Pro Rounded","Segoe UI Variable Display","Segoe UI",system-ui,-apple-system,Roboto,sans-serif;cursor:pointer;transition:.15s}
 .tabs button:hover{transform:translateY(-1px)}
 .tabs button.on{background:var(--red);border-color:var(--red);color:#fff;box-shadow:0 3px 10px rgba(230,57,70,.4)}
 .s{padding:0 16px}
@@ -37,22 +35,22 @@ select:focus,input:focus{outline:none;border-color:var(--gold)}
  background:radial-gradient(circle,color-mix(in srgb,var(--g) 28%,transparent),transparent 70%);opacity:.5;filter:grayscale(1);transition:.25s}
 .c.got img{opacity:1;filter:none}
 .c b{display:inline-block;padding:1px 9px;border-radius:999px;background:color-mix(in srgb,var(--g) 18%,transparent);color:var(--mut);font-size:11px;font-weight:700}
-.c span{display:block;margin-top:4px;font:600 15px Fredoka,Nunito,sans-serif;text-transform:capitalize;word-break:break-word}
+.c span{display:block;margin-top:4px;font:600 15px ui-rounded,"SF Pro Rounded","Segoe UI Variable Display","Segoe UI",system-ui,-apple-system,Roboto,sans-serif;text-transform:capitalize;word-break:break-word}
 .c.got{border-color:var(--ok);border-top-color:var(--g)}
 .c.got::before{content:"✓";position:absolute;top:8px;left:8px;width:20px;height:20px;line-height:20px;border-radius:50%;background:var(--ok);color:#fff;font-size:12px;font-weight:700}
 .sh{position:absolute;top:4px;right:4px;border:0;background:none;font-size:18px;cursor:pointer;padding:4px;opacity:.3;filter:grayscale(1);transition:.2s}
 .sh:hover{opacity:.8;transform:scale(1.2)}
 .c.shiny .sh{opacity:1;filter:none}
 .c.shiny{border-color:var(--gold);background:linear-gradient(160deg,color-mix(in srgb,var(--gold) 22%,var(--card)),var(--card) 60%);box-shadow:0 0 0 2px #f2b70544,0 6px 18px #f2b70555}
-.about{position:absolute;top:0;right:0;padding:6px 14px;border:2px solid #fff8;border-radius:999px;background:#0002;color:#fff;font:600 14px Fredoka,Nunito,sans-serif;cursor:pointer}
+.about{position:absolute;top:0;right:0;padding:6px 14px;border:2px solid #fff8;border-radius:999px;background:#0002;color:#fff;font:600 14px ui-rounded,"SF Pro Rounded","Segoe UI Variable Display","Segoe UI",system-ui,-apple-system,Roboto,sans-serif;cursor:pointer}
 .about:hover{background:#0004}
 dialog{max-width:480px;width:calc(100% - 32px);border:2px solid var(--bd);border-radius:18px;background:var(--card);color:var(--ink);padding:20px 22px;box-shadow:0 20px 50px rgba(0,0,0,.35);font-size:15px}
 dialog::backdrop{background:rgba(0,0,0,.55)}
-dialog h2{margin:0 0 8px;font:600 22px Fredoka,Nunito,sans-serif}
-dialog h3{margin:16px 0 4px;font:600 16px Fredoka,Nunito,sans-serif;color:var(--red)}
+dialog h2{margin:0 0 8px;font:600 22px ui-rounded,"SF Pro Rounded","Segoe UI Variable Display","Segoe UI",system-ui,-apple-system,Roboto,sans-serif}
+dialog h3{margin:16px 0 4px;font:600 16px ui-rounded,"SF Pro Rounded","Segoe UI Variable Display","Segoe UI",system-ui,-apple-system,Roboto,sans-serif;color:var(--red)}
 dialog p,dialog ul{margin:0 0 6px}dialog ul{padding-left:20px}
 dialog a{color:var(--red)}
-dialog button{margin-top:14px;padding:9px 20px;border:0;border-radius:999px;background:var(--red);color:#fff;font:600 15px Fredoka,Nunito,sans-serif;cursor:pointer}
+dialog button{margin-top:14px;padding:9px 20px;border:0;border-radius:999px;background:var(--red);color:#fff;font:600 15px ui-rounded,"SF Pro Rounded","Segoe UI Variable Display","Segoe UI",system-ui,-apple-system,Roboto,sans-serif;cursor:pointer}
 #msg{padding:16px;color:var(--mut)}
 .g1{--g:#e63946}.g2{--g:#e0a526}.g3{--g:#2a9d8f}.g4{--g:#4361ee}.g5{--g:#6c757d}.g6{--g:#e56b9e}.g7{--g:#f77f00}.g8{--g:#7b2cbf}.g9{--g:#c1121f}
 </style>
