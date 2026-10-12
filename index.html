@@ -87,12 +87,13 @@ async function loadNames(){
 async function loadDex(gi){
  const slugs=GAMES[gi][1];
  if(slugs[0]==="national")return names.map((_,i)=>i+1);
- const key="dex_"+slugs.join("+");
+ const key="dex2_"+slugs.join("+");
  try{const c=JSON.parse(localStorage.getItem(key)||"null");if(c)return c}catch(e){}
  const parts=await Promise.all(slugs.map(s=>getJSON(API+"pokedex/"+s)));
- const set=new Set();
- parts.forEach(p=>p.pokemon_entries.forEach(e=>set.add(+e.pokemon_species.url.split("/").filter(Boolean).pop())));
- const l=[...set].sort((a,b)=>a-b);
+ const seen=new Set(),l=[];
+ parts.forEach(p=>[...p.pokemon_entries].sort((a,b)=>a.entry_number-b.entry_number).forEach(e=>{
+  const id=+e.pokemon_species.url.split("/").filter(Boolean).pop();
+  if(!seen.has(id)){seen.add(id);l.push(id)}}));
  try{localStorage.setItem(key,JSON.stringify(l))}catch(e){}
  return l;
 }
@@ -107,13 +108,15 @@ function render(){
  const q=$("q").value.trim().toLowerCase().replace(/^#/,"");
  [...$("tabs").children].forEach(b=>b.classList.toggle("on",b.dataset.k===filter));
  let n=0,h="";
- for(const id of list){
-  const name=names[id-1]||"?",has=!!got[id];
+ const national=GAMES[gi][1][0]==="national";
+ for(const [idx,id] of list.entries()){
+  const name=names[id-1]||"?",has=!!got[id],num=String(idx+1);
   if(has)n++;
   if(filter==="fangad"&&!has)continue;
   if(filter==="saknas"&&has)continue;
-  if(q&&!(name.includes(q)||String(id)===q.replace(/^0+/,"")))continue;
-  h+=`<div class="c${has?" got":""}" data-n="${id}"><img loading="lazy" alt="" src="${SPR(id)}"><b>${pad(id)}</b><span>${name}</span></div>`;
+  if(q&&!(name.includes(q)||num===q.replace(/^0+/,"")||String(id)===q.replace(/^0+/,"")))continue;
+  const label=national?pad(id):"#"+num.padStart(3,"0")+" · N"+id;
+  h+=`<div class="c${has?" got":""}" data-n="${id}"><img loading="lazy" alt="" src="${SPR(id)}"><b>${label}</b><span>${name}</span></div>`;
  }
  $("grid").innerHTML=h;
  const t=list.length||1;
