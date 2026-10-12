@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Min Pokédex</title>
+<style>
+:root{--bg:#f6f4f0;--card:#fff;--ink:#1d1d1f;--mut:#6b6b70;--red:#d93a3a;--ok:#2e9e5b;--bd:#e0ddd6}
+@media (prefers-color-scheme:dark){:root{--bg:#17181b;--card:#222428;--ink:#f1f1f3;--mut:#9a9ba3;--bd:#35373d}}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif}
+header{background:var(--red);color:#fff;padding:16px}
+h1{margin:0 0 10px;font-size:22px}
+.wrap{max-width:1000px;margin:0 auto}
+select,input{font:inherit;padding:10px;border-radius:10px;border:1px solid var(--bd);background:var(--card);color:var(--ink);width:100%;box-sizing:border-box}
+.bar{height:12px;background:rgba(255,255,255,.35);border-radius:6px;overflow:hidden;margin-top:12px}
+.bar i{display:block;height:100%;background:#fff;width:0;transition:width .3s}
+#stat{margin-top:6px;font-size:14px}
+.tabs{display:flex;gap:6px;padding:12px 16px 8px}
+.tabs button{flex:1;padding:8px;border:1px solid var(--bd);background:var(--card);color:var(--ink);border-radius:10px;font:inherit;cursor:pointer}
+.tabs button.on{background:var(--ink);color:var(--bg)}
+.s{padding:0 16px}
+#grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;padding:12px 16px 32px}
+.c{background:var(--card);border:2px solid var(--bd);border-radius:12px;padding:8px 4px;text-align:center;cursor:pointer;user-select:none}
+.c img{width:96px;height:96px;image-rendering:pixelated;opacity:.45;filter:grayscale(1);transition:.2s}
+.c.got img{opacity:1;filter:none}
+.c b{display:block;color:var(--mut);font-size:12px;font-weight:600}
+.c span{font-size:14px;text-transform:capitalize;word-break:break-word}
+.c.got{border-color:var(--ok)}
+#msg{padding:16px;color:var(--mut)}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+<h1>🔴 Min Pokédex</h1>
+<select id="game" aria-label="Spel"></select>
+<div class="bar"><i id="fill"></i></div>
+<div id="stat"></div>
+</div></header>
+<div class="wrap">
+<div class="tabs" id="tabs"></div>
+<div class="s"><input id="q" placeholder="Sök namn eller nummer…"></div>
+<div id="msg">Hämtar Pokémon…</div>
+<div id="grid"></div>
+</div>
+<script>
+const API="https://pokeapi.co/api/v2/";
+const SPR=id=>"https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/"+id+".png";
+// [namn, [pokédex-slugs hos PokeAPI]]  – "national" = alla
+const GAMES=[
+["Alla Pokémon (nationell)",["national"]],
+["Red / Blue / Yellow",["kanto"]],
+["Gold / Silver / Crystal",["original-johto"]],
+["Ruby / Sapphire / Emerald",["hoenn"]],
+["FireRed / LeafGreen",["kanto"]],
+["Diamond / Pearl",["original-sinnoh"]],
+["Platinum",["extended-sinnoh"]],
+["HeartGold / SoulSilver",["updated-johto"]],
+["Black / White",["original-unova"]],
+["Black 2 / White 2",["updated-unova"]],
+["X / Y",["kalos-central","kalos-coastal","kalos-mountain"]],
+["Omega Ruby / Alpha Sapphire",["updated-hoenn"]],
+["Sun / Moon / Ultra Sun / Ultra Moon",["updated-alola"]],
+["Let's Go Pikachu / Eevee",["letsgo-kanto"]],
+["Sword / Shield (+ Isle of Armor, Crown Tundra)",["galar","isle-of-armor","crown-tundra"]],
+["Brilliant Diamond / Shining Pearl",["original-sinnoh"]],
+["Legends: Arceus",["hisui"]],
+["Scarlet / Violet (+ DLC)",["paldea","kitakami","blueberry"]]
+];
+const $=id=>document.getElementById(id);
+let names=[],list=[],filter="alla",store={};
+try{store=JSON.parse(localStorage.getItem("dex")||"{}")}catch(e){}
+const save=()=>{try{localStorage.setItem("dex",JSON.stringify(store))}catch(e){}};
+GAMES.forEach((g,i)=>$("game").add(new Option(g[0],i)));
+[["alla","Alla"],["fangad","Fångade"],["saknas","Saknas"]].forEach(([k,t])=>{
+ const b=document.createElement("button");b.textContent=t;b.dataset.k=k;
+ b.onclick=()=>{filter=k;render()};$("tabs").append(b)});
+const pad=n=>"#"+String(n).padStart(4,"0");
+const getJSON=async u=>{const r=await fetch(u);if(!r.ok)throw 0;return r.json()};
+
+async function loadNames(){
+ try{const c=JSON.parse(localStorage.getItem("names")||"null");if(c&&c.length>=1000)return c}catch(e){}
+ const d=await getJSON(API+"pokemon-species?limit=1025");
+ const n=d.results.map(r=>r.name.replace(/-/g," "));
+ try{localStorage.setItem("names",JSON.stringify(n))}catch(e){}
+ return n;
+}
+async function loadDex(gi){
+ const slugs=GAMES[gi][1];
+ if(slugs[0]==="national")return names.map((_,i)=>i+1);
+ const key="dex_"+slugs.join("+");
+ try{const c=JSON.parse(localStorage.getItem(key)||"null");if(c)return c}catch(e){}
+ const parts=await Promise.all(slugs.map(s=>getJSON(API+"pokedex/"+s)));
+ const set=new Set();
+ parts.forEach(p=>p.pokemon_entries.forEach(e=>set.add(+e.pokemon_species.url.split("/").filter(Boolean).pop())));
+ const l=[...set].sort((a,b)=>a-b);
+ try{localStorage.setItem(key,JSON.stringify(l))}catch(e){}
+ return l;
+}
+async function selectGame(){
+ $("msg").textContent="Hämtar lista…";$("grid").innerHTML="";
+ try{list=await loadDex($("game").value);$("msg").textContent=""}
+ catch(e){$("msg").textContent="Kunde inte hämta spelets Pokédex – visar nationell lista.";list=names.map((_,i)=>i+1)}
+ render();
+}
+function render(){
+ const gi=$("game").value,got=store[gi]=store[gi]||{};
+ const q=$("q").value.trim().toLowerCase().replace(/^#/,"");
+ [...$("tabs").children].forEach(b=>b.classList.toggle("on",b.dataset.k===filter));
+ let n=0,h="";
+ for(const id of list){
+  const name=names[id-1]||"?",has=!!got[id];
+  if(has)n++;
+  if(filter==="fangad"&&!has)continue;
+  if(filter==="saknas"&&has)continue;
+  if(q&&!(name.includes(q)||String(id)===q.replace(/^0+/,"")))continue;
+  h+=`<div class="c${has?" got":""}" data-n="${id}"><img loading="lazy" alt="" src="${SPR(id)}"><b>${pad(id)}</b><span>${name}</span></div>`;
+ }
+ $("grid").innerHTML=h;
+ const t=list.length||1;
+ $("fill").style.width=(n/t*100)+"%";
+ $("stat").textContent=n+" av "+list.length+" fångade ("+Math.round(n/t*100)+"%)";
+}
+$("grid").onclick=e=>{const c=e.target.closest(".c");if(!c)return;
+ const gi=$("game").value,n=c.dataset.n,g=store[gi];
+ if(g[n])delete g[n];else g[n]=1;save();render()};
+$("game").onchange=selectGame;$("q").oninput=render;
+loadNames().then(n=>{names=n;selectGame()}).catch(()=>{$("msg").textContent="Kunde inte nå PokeAPI. Kontrollera internetanslutningen."});
+</script>
+</body>
+</html>
