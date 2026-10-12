@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Pokédeck</title>
+<title>Pokedeck</title>
 <style>
 :root{--bg:#f6f4f0;--card:#fff;--ink:#1d1d1f;--mut:#6b6b70;--red:#d93a3a;--ok:#2e9e5b;--bd:#e0ddd6}
 @media (prefers-color-scheme:dark){:root{--bg:#17181b;--card:#222428;--ink:#f1f1f3;--mut:#9a9ba3;--bd:#35373d}}
@@ -26,12 +26,16 @@ select,input{font:inherit;padding:10px;border-radius:10px;border:1px solid var(-
 .c b{display:block;color:var(--mut);font-size:12px;font-weight:600}
 .c span{font-size:14px;text-transform:capitalize;word-break:break-word}
 .c.got{border-color:var(--ok)}
+.c{position:relative}
+.sh{position:absolute;top:2px;right:2px;border:0;background:none;font-size:18px;cursor:pointer;padding:4px;opacity:.35;filter:grayscale(1)}
+.c.shiny .sh{opacity:1;filter:none}
+.c.shiny{border-color:#e6b422}
 #msg{padding:16px;color:var(--mut)}
 </style>
 </head>
 <body>
 <header><div class="wrap">
-<h1>Pokédeck</h1>
+<h1>🔴 Pokedeck</h1>
 <select id="game" aria-label="Spel"></select>
 <div class="bar"><i id="fill"></i></div>
 <div id="stat"></div>
@@ -45,6 +49,7 @@ select,input{font:inherit;padding:10px;border-radius:10px;border:1px solid var(-
 <script>
 const API="https://pokeapi.co/api/v2/";
 const SPR=id=>"https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/"+id+".png";
+const SPRS=id=>"https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/"+id+".png";
 // [namn, [pokédex-slugs hos PokeAPI]]  – "national" = alla
 const GAMES=[
 ["Alla Pokémon (nationell)",["national"]],
@@ -67,11 +72,27 @@ const GAMES=[
 ["Scarlet / Violet (+ DLC)",["paldea","kitakami","blueberry"]]
 ];
 const $=id=>document.getElementById(id);
+// Pokémon som inte kan vara shiny (källa: Serebii.net/games/shiny.shtml).
+// SHINY_GLOBAL = låsta i alla spel. SHINY_LOCK = nyckel är spelets plats i listan ovan
+// (0 = första, 1 = Red/Blue/Yellow ...), värdet "all" eller en lista med nationella nummer.
+const SHINY_GLOBAL=[494,720,789,790,801,802,891,892,893,896,897,898,1009,1010,1014,1015,1016,1017,1020,1021,1022,1023,1024,1025];
+const SHINY_LOCK={
+ 1:"all",
+ 8:[643,644],
+ 9:[643,644],
+ 10:[144,145,146,150,716,717,718],
+ 11:[382,383,384,386],
+ 12:[718,785,786,787,788,791,792,800],
+ 14:[144,145,146,647,772,803,888,889,890],
+ 15:[151,385],
+ 16:[480,481,482,483,484,485,486,487,488,489,490,491,492,493,641,642,645,905],
+ 17:[144,145,146,243,244,245,249,250,380,381,382,383,384,638,639,640,643,644,646,648,791,792,800,999,1001,1002,1003,1004,1007,1008]
+};
 let names=[],list=[],filter="alla",store={};
 try{store=JSON.parse(localStorage.getItem("dex")||"{}")}catch(e){}
 const save=()=>{try{localStorage.setItem("dex",JSON.stringify(store))}catch(e){}};
 GAMES.forEach((g,i)=>$("game").add(new Option(g[0],i)));
-[["alla","Alla"],["fangad","Fångade"],["saknas","Saknas"]].forEach(([k,t])=>{
+[["alla","Alla"],["fangad","Fångade"],["saknas","Saknas"],["shiny","✨ Shiny"]].forEach(([k,t])=>{
  const b=document.createElement("button");b.textContent=t;b.dataset.k=k;
  b.onclick=()=>{filter=k;render()};$("tabs").append(b)});
 const pad=n=>"#"+String(n).padStart(4,"0");
@@ -107,25 +128,29 @@ function render(){
  const gi=$("game").value,got=store[gi]=store[gi]||{};
  const q=$("q").value.trim().toLowerCase().replace(/^#/,"");
  [...$("tabs").children].forEach(b=>b.classList.toggle("on",b.dataset.k===filter));
- let n=0,h="";
- const national=GAMES[gi][1][0]==="national";
+ let n=0,ns=0,h="";
+ const national=GAMES[gi][1][0]==="national",lock=SHINY_LOCK[gi];
  for(const [idx,id] of list.entries()){
-  const name=names[id-1]||"?",has=!!got[id],num=String(idx+1);
+  const name=names[id-1]||"?",has=!!got[id],locked=lock==="all"||SHINY_GLOBAL.includes(id)||(Array.isArray(lock)&&lock.includes(id)),sh=got[id]===2&&!locked,num=String(idx+1);
   if(has)n++;
+  if(sh)ns++;
   if(filter==="fangad"&&!has)continue;
   if(filter==="saknas"&&has)continue;
+  if(filter==="shiny"&&!sh)continue;
   if(q&&!(name.includes(q)||num===q.replace(/^0+/,"")||String(id)===q.replace(/^0+/,"")))continue;
   const label=national?pad(id):"#"+num.padStart(3,"0")+" · N"+id;
-  h+=`<div class="c${has?" got":""}" data-n="${id}"><img loading="lazy" alt="" src="${SPR(id)}"><b>${label}</b><span>${name}</span></div>`;
+  h+=`<div class="c${has?" got":""}${sh?" shiny":""}" data-n="${id}">${locked?"":`<button class="sh" title="Shiny" aria-label="Markera som shiny">✨</button>`}<img loading="lazy" alt="" src="${sh?SPRS(id):SPR(id)}"><b>${label}</b><span>${name}</span></div>`;
  }
  $("grid").innerHTML=h;
  const t=list.length||1;
  $("fill").style.width=(n/t*100)+"%";
- $("stat").textContent=n+" av "+list.length+" fångade ("+Math.round(n/t*100)+"%)";
+ $("stat").textContent=n+" av "+list.length+" fångade ("+Math.round(n/t*100)+"%) · ✨ "+ns+" shiny";
 }
 $("grid").onclick=e=>{const c=e.target.closest(".c");if(!c)return;
  const gi=$("game").value,n=c.dataset.n,g=store[gi];
- if(g[n])delete g[n];else g[n]=1;save();render()};
+ if(e.target.closest(".sh"))g[n]=g[n]===2?1:2;
+ else if(g[n])delete g[n];else g[n]=1;
+ save();render()};
 $("game").onchange=selectGame;$("q").oninput=render;
 loadNames().then(n=>{names=n;selectGame()}).catch(()=>{$("msg").textContent="Kunde inte nå PokeAPI. Kontrollera internetanslutningen."});
 </script>
