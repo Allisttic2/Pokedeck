@@ -143,7 +143,9 @@ async function selectGame(){
  render();
 }
 function render(){
- const gi=$("game").value,got=store[gi]=store[gi]||{};
+ const gi=$("game").value;store[gi]=store[gi]||{};
+ let got=store[gi];
+ if(gi==="0"){got={};for(const k in store)for(const id in store[k])got[id]=Math.max(got[id]||0,store[k][id])} // nationell = summan av alla spel
  const q=$("q").value.trim().toLowerCase().replace(/^#/,"");
  [...$("tabs").children].forEach(b=>b.classList.toggle("on",b.dataset.k===filter));
  let n=0,ns=0,h="";
@@ -166,6 +168,10 @@ function render(){
 }
 $("grid").onclick=e=>{const c=e.target.closest(".c");if(!c)return;
  const gi=$("game").value,n=c.dataset.n,g=store[gi];
+ if(gi==="0"&&!e.target.closest(".sh")){
+  const from=GAMES.map((_,i)=>i).filter(i=>i&&store[i]&&store[i][n]);
+  if(from.length){const m=$("msg");m.textContent="Fångad via "+GAMES[from[0]][0]+" – ändra den i det spelet.";setTimeout(()=>{if(m.textContent.startsWith("Fångad via"))m.textContent=""},3000);return}
+ }
  if(e.target.closest(".sh"))g[n]=g[n]===2?1:2;
  else if(g[n])delete g[n];else g[n]=1;
  save();render()};
