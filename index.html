@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="sv">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -44,6 +44,15 @@ select:focus,input:focus{outline:none;border-color:var(--gold)}
 .sh:hover{opacity:.8;transform:scale(1.2)}
 .c.shiny .sh{opacity:1;filter:none}
 .c.shiny{border-color:var(--gold);background:linear-gradient(160deg,color-mix(in srgb,var(--gold) 22%,var(--card)),var(--card) 60%);box-shadow:0 0 0 2px #f2b70544,0 6px 18px #f2b70555}
+.about{position:absolute;top:0;right:0;padding:6px 14px;border:2px solid #fff8;border-radius:999px;background:#0002;color:#fff;font:600 14px Fredoka,Nunito,sans-serif;cursor:pointer}
+.about:hover{background:#0004}
+dialog{max-width:480px;width:calc(100% - 32px);border:2px solid var(--bd);border-radius:18px;background:var(--card);color:var(--ink);padding:20px 22px;box-shadow:0 20px 50px rgba(0,0,0,.35);font-size:15px}
+dialog::backdrop{background:rgba(0,0,0,.55)}
+dialog h2{margin:0 0 8px;font:600 22px Fredoka,Nunito,sans-serif}
+dialog h3{margin:16px 0 4px;font:600 16px Fredoka,Nunito,sans-serif;color:var(--red)}
+dialog p,dialog ul{margin:0 0 6px}dialog ul{padding-left:20px}
+dialog a{color:var(--red)}
+dialog button{margin-top:14px;padding:9px 20px;border:0;border-radius:999px;background:var(--red);color:#fff;font:600 15px Fredoka,Nunito,sans-serif;cursor:pointer}
 #msg{padding:16px;color:var(--mut)}
 .g1{--g:#e63946}.g2{--g:#e0a526}.g3{--g:#2a9d8f}.g4{--g:#4361ee}.g5{--g:#6c757d}.g6{--g:#e56b9e}.g7{--g:#f77f00}.g8{--g:#7b2cbf}.g9{--g:#c1121f}
 </style>
@@ -51,23 +60,40 @@ select:focus,input:focus{outline:none;border-color:var(--gold)}
 <body>
 <header><div class="wrap">
 <h1><svg class="logo" viewBox="0 0 100 100" aria-hidden="true"><rect x="14" y="22" width="46" height="64" rx="8" fill="#ffd23f" stroke="#1d1d22" stroke-width="6" transform="rotate(-14 37 54)"/><rect x="34" y="14" width="46" height="64" rx="8" fill="#4361ee" stroke="#1d1d22" stroke-width="6" transform="rotate(8 57 46)"/><rect x="28" y="20" width="46" height="64" rx="8" fill="#fff" stroke="#1d1d22" stroke-width="6"/></svg>Pokedeck</h1>
-<select id="game" aria-label="Spel"></select>
+<button id="aboutBtn" class="about" type="button">About</button>
+<select id="game" aria-label="Game"></select>
 <div class="bar"><i id="fill"></i></div>
 <div id="stat"></div>
 </div></header>
 <div class="wrap">
 <div class="tabs" id="tabs"></div>
-<div class="s"><input id="q" placeholder="Sök namn eller nummer…"></div>
-<div id="msg">Hämtar Pokémon…</div>
+<div class="s"><input id="q" placeholder="Search by name or number…"></div>
+<div id="msg">Loading Pokémon…</div>
 <div id="grid"></div>
 </div>
+<dialog id="about">
+<h2>About Pokedeck</h2>
+<p>Pokedeck is a free tracker for your Pokémon collection. Pick a game, tap a Pokémon to mark it as caught, and tap the ✨ to mark it as shiny.</p>
+<h3>How it works</h3>
+<ul>
+<li>Every game has its own list, in that game's regional Pokédex order. The "All Pokémon (National)" view combines everything you have caught in any game.</li>
+<li>Pokémon that cannot be shiny in a game have no ✨ button.</li>
+<li>Your progress is saved only in this browser on this device. It is not uploaded anywhere, and clearing your browser data will erase it.</li>
+<li>There are no accounts, ads or tracking.</li>
+</ul>
+<h3>Credits</h3>
+<p>Names, sprites and Pokédex lists come from <a href="https://pokeapi.co" target="_blank" rel="noopener">PokeAPI</a>. Shiny-lock information is based on <a href="https://www.serebii.net/games/shiny.shtml" target="_blank" rel="noopener">Serebii.net</a> and may be out of date or incomplete.</p>
+<h3>Disclaimer</h3>
+<p>This is an unofficial fan project. It is not affiliated with, endorsed by or sponsored by Nintendo, Game Freak, Creatures Inc. or The Pokémon Company. Pokémon and all related names and images are trademarks and copyrights of their respective owners.</p>
+<button id="aboutClose" type="button">Close</button>
+</dialog>
 <script>
 const API="https://pokeapi.co/api/v2/";
 const SPR=id=>"https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/"+id+".png";
 const SPRS=id=>"https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/"+id+".png";
-// [namn, [pokédex-slugs hos PokeAPI]]  – "national" = alla
+// [name, [Pokédex slugs on PokeAPI]]  – "national" = all
 const GAMES=[
-["Alla Pokémon (nationell)",["national"]],
+["All Pokémon (National)",["national"]],
 ["Red / Blue / Yellow",["kanto"]],
 ["Gold / Silver / Crystal",["original-johto"]],
 ["Ruby / Sapphire / Emerald",["hoenn"]],
@@ -88,9 +114,9 @@ const GAMES=[
 ["Legends: Z-A (+ Mega Dimension)",["lumiose-city","hyperspace"]]
 ];
 const $=id=>document.getElementById(id);
-// Pokémon som inte kan vara shiny (källa: Serebii.net/games/shiny.shtml).
-// SHINY_GLOBAL = låsta i alla spel. SHINY_LOCK = nyckel är spelets plats i listan ovan
-// (0 = första, 1 = Red/Blue/Yellow ...), värdet "all" eller en lista med nationella nummer.
+// Pokémon that cannot be shiny (source: Serebii.net/games/shiny.shtml).
+// SHINY_GLOBAL = locked in every game. SHINY_LOCK = key is the game's position in the list above
+// (0 = first, 1 = Red/Blue/Yellow ...), value is "all" or a list of National Dex numbers.
 const SHINY_GLOBAL=[494,720,789,790,801,802,891,892,893,896,897,898,1009,1010,1014,1015,1016,1017,1020,1021,1022,1023,1024,1025];
 const SHINY_LOCK={
  1:"all",
@@ -110,7 +136,7 @@ let names=[],list=[],filter="alla",store={};
 try{store=JSON.parse(localStorage.getItem("dex")||"{}")}catch(e){}
 const save=()=>{try{localStorage.setItem("dex",JSON.stringify(store))}catch(e){}};
 GAMES.forEach((g,i)=>$("game").add(new Option(g[0],i)));
-[["alla","Alla"],["fangad","Fångade"],["saknas","Saknas"],["shiny","✨ Shiny"]].forEach(([k,t])=>{
+[["alla","All"],["fangad","Caught"],["saknas","Missing"],["shiny","✨ Shiny"]].forEach(([k,t])=>{
  const b=document.createElement("button");b.textContent=t;b.dataset.k=k;
  b.onclick=()=>{filter=k;render()};$("tabs").append(b)});
 const gen=n=>n<=151?1:n<=251?2:n<=386?3:n<=493?4:n<=649?5:n<=721?6:n<=809?7:n<=905?8:9;
@@ -140,15 +166,15 @@ async function loadDex(gi){
  return l;
 }
 async function selectGame(){
- $("msg").textContent="Hämtar lista…";$("grid").innerHTML="";
+ $("msg").textContent="Loading list…";$("grid").innerHTML="";
  try{list=await loadDex($("game").value);$("msg").textContent=""}
- catch(e){$("msg").textContent="Kunde inte hämta spelets Pokédex – visar nationell lista.";list=names.map((_,i)=>i+1)}
+ catch(e){$("msg").textContent="Could not load this game's Pokédex – showing the National list.";list=names.map((_,i)=>i+1)}
  render();
 }
 function render(){
  const gi=$("game").value;store[gi]=store[gi]||{};
  let got=store[gi];
- if(gi==="0"){got={};for(const k in store)for(const id in store[k])got[id]=Math.max(got[id]||0,store[k][id])} // nationell = summan av alla spel
+ if(gi==="0"){got={};for(const k in store)for(const id in store[k])got[id]=Math.max(got[id]||0,store[k][id])} // national = union of all games
  const q=$("q").value.trim().toLowerCase().replace(/^#/,"");
  [...$("tabs").children].forEach(b=>b.classList.toggle("on",b.dataset.k===filter));
  let n=0,ns=0,h="";
@@ -162,24 +188,27 @@ function render(){
   if(filter==="shiny"&&!sh)continue;
   if(q&&!(name.includes(q)||num===q.replace(/^0+/,"")||String(id)===q.replace(/^0+/,"")))continue;
   const label=national?pad(id):"#"+num.padStart(3,"0")+" · N"+id;
-  h+=`<div class="c g${gen(id)}${has?" got":""}${sh?" shiny":""}" data-n="${id}">${locked?"":`<button class="sh" title="Shiny" aria-label="Markera som shiny">✨</button>`}<img loading="lazy" alt="" src="${sh?SPRS(id):SPR(id)}"><b>${label}</b><span>${name}</span></div>`;
+  h+=`<div class="c g${gen(id)}${has?" got":""}${sh?" shiny":""}" data-n="${id}">${locked?"":`<button class="sh" title="Shiny" aria-label="Mark as shiny">✨</button>`}<img loading="lazy" alt="" src="${sh?SPRS(id):SPR(id)}"><b>${label}</b><span>${name}</span></div>`;
  }
  $("grid").innerHTML=h;
  const t=list.length||1;
  $("fill").style.width=(n/t*100)+"%";
- $("stat").textContent=n+" av "+list.length+" fångade ("+Math.round(n/t*100)+"%) · ✨ "+ns+" shiny";
+ $("stat").textContent=n+" of "+list.length+" caught ("+Math.round(n/t*100)+"%) · ✨ "+ns+" shiny";
 }
 $("grid").onclick=e=>{const c=e.target.closest(".c");if(!c)return;
  const gi=$("game").value,n=c.dataset.n,g=store[gi];
  if(gi==="0"&&!e.target.closest(".sh")){
   const from=GAMES.map((_,i)=>i).filter(i=>i&&store[i]&&store[i][n]);
-  if(from.length){const m=$("msg");m.textContent="Fångad via "+GAMES[from[0]][0]+" – ändra den i det spelet.";setTimeout(()=>{if(m.textContent.startsWith("Fångad via"))m.textContent=""},3000);return}
+  if(from.length){const m=$("msg");m.textContent="Caught in "+GAMES[from[0]][0]+" – change it in that game.";setTimeout(()=>{if(m.textContent.startsWith("Caught in"))m.textContent=""},3000);return}
  }
  if(e.target.closest(".sh"))g[n]=g[n]===2?1:2;
  else if(g[n])delete g[n];else g[n]=1;
  save();render()};
+$("aboutBtn").onclick=()=>$("about").showModal();
+$("aboutClose").onclick=()=>$("about").close();
+$("about").onclick=e=>{if(e.target===$("about"))$("about").close()};
 $("game").onchange=selectGame;$("q").oninput=render;
-loadNames().then(n=>{names=n;selectGame()}).catch(()=>{$("msg").textContent="Kunde inte nå PokeAPI. Kontrollera internetanslutningen."});
+loadNames().then(n=>{names=n;selectGame()}).catch(()=>{$("msg").textContent="Could not reach PokeAPI. Check your internet connection."});
 </script>
 </body>
 </html>
