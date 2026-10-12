@@ -55,6 +55,9 @@ dialog h3{margin:16px 0 4px;font:600 16px Fredoka,ui-rounded,system-ui,-apple-sy
 dialog p,dialog ul{margin:0 0 6px}dialog ul{padding-left:20px}
 dialog a{color:var(--red)}
 dialog button{margin-top:14px;padding:9px 20px;border:0;border-radius:999px;background:var(--red);color:#fff;font:600 15px Fredoka,ui-rounded,system-ui,-apple-system,"Segoe UI",sans-serif;cursor:pointer}
+.tys{display:flex;justify-content:center;gap:4px;margin-top:5px;min-height:17px;flex-wrap:wrap}
+.ty{font-style:normal;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;padding:1px 7px;border-radius:999px;color:#fff;line-height:1.5}
+.ty.lt{color:#1d1d22}
 #msg{padding:16px;color:var(--mut)}
 .g1{--g:#e63946}.g2{--g:#e0a526}.g3{--g:#2a9d8f}.g4{--g:#4361ee}.g5{--g:#6c757d}.g6{--g:#e56b9e}.g7{--g:#f77f00}.g8{--g:#7b2cbf}.g9{--g:#c1121f}
 </style>
@@ -154,6 +157,7 @@ async function loadTypes(){
  try{localStorage.setItem("types1",JSON.stringify(m))}catch(e){}
  return m;
 }
+const LIGHT=["electric","ice","ground","steel","normal","fairy"];
 const col=(id,i)=>{const t=types[id]||[];const a=TC[t[0]]||"#9aa0a6";return i?(TC[t[1]]||a):a};
 const gen=n=>n<=151?1:n<=251?2:n<=386?3:n<=493?4:n<=649?5:n<=721?6:n<=809?7:n<=905?8:9;
 const pad=n=>"#"+String(n).padStart(4,"0");
@@ -204,7 +208,7 @@ function render(){
   if(filter==="shiny"&&!sh)continue;
   if(q&&!(name.includes(q)||num===q.replace(/^0+/,"")||String(id)===q.replace(/^0+/,"")))continue;
   const label=national?pad(id):"#"+num.padStart(3,"0")+" · N"+id;
-  h+=`<div class="c${has?" got":""}${sh?" shiny":""}" data-n="${id}" style="--g:${col(id,0)};--g2:${col(id,1)}"><i class="tp"></i>${locked?"":`<button class="sh" title="Shiny" aria-label="Mark as shiny">✨</button>`}<img loading="lazy" alt="" src="${sh?SPRS(id):SPR(id)}"><b>${label}</b><span>${name}</span></div>`;
+  h+=`<div class="c${has?" got":""}${sh?" shiny":""}" data-n="${id}" style="--g:${col(id,0)};--g2:${col(id,1)}"><i class="tp"></i>${locked?"":`<button class="sh" title="Shiny" aria-label="Mark as shiny">✨</button>`}<img loading="lazy" alt="" src="${sh?SPRS(id):SPR(id)}"><b>${label}</b><span>${name}</span><div class="tys">${(types[id]||[]).filter(Boolean).map(t=>`<em class="ty${LIGHT.includes(t)?" lt":""}" style="background:${TC[t]}">${t}</em>`).join("")}</div></div>`;
  }
  $("grid").innerHTML=h;
  const t=list.length||1;
