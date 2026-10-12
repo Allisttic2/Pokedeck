@@ -86,7 +86,8 @@ const GAMES=[
 ["Sword / Shield (+ Isle of Armor, Crown Tundra)",["galar","isle-of-armor","crown-tundra"]],
 ["Brilliant Diamond / Shining Pearl",["original-sinnoh"]],
 ["Legends: Arceus",["hisui"]],
-["Scarlet / Violet (+ DLC)",["paldea","kitakami","blueberry"]]
+["Scarlet / Violet (+ DLC)",["paldea","kitakami","blueberry"]],
+["Legends: Z-A (+ Mega Dimension)",["lumiose-city","hyperspace"]]
 ];
 const $=id=>document.getElementById(id);
 // Pokémon som inte kan vara shiny (källa: Serebii.net/games/shiny.shtml).
@@ -103,6 +104,8 @@ const SHINY_LOCK={
  14:[144,145,146,647,772,803,888,889,890],
  15:[151,385],
  16:[480,481,482,483,484,485,486,487,488,489,490,491,492,493,641,642,645,905],
+
+ 18:[150,382,383,384,485,491,647,648,649,716,717,718,719,721,807,808,809,999],
  17:[144,145,146,243,244,245,249,250,380,381,382,383,384,638,639,640,643,644,646,648,791,792,800,999,1001,1002,1003,1004,1007,1008]
 };
 let names=[],list=[],filter="alla",store={};
@@ -128,7 +131,9 @@ async function loadDex(gi){
  if(slugs[0]==="national")return names.map((_,i)=>i+1);
  const key="dex2_"+slugs.join("+");
  try{const c=JSON.parse(localStorage.getItem(key)||"null");if(c)return c}catch(e){}
- const parts=await Promise.all(slugs.map(s=>getJSON(API+"pokedex/"+s)));
+ const res=await Promise.allSettled(slugs.map(s=>getJSON(API+"pokedex/"+s)));
+ const parts=res.filter(r=>r.status==="fulfilled").map(r=>r.value);
+ if(!parts.length)throw 0;
  const seen=new Set(),l=[];
  parts.forEach(p=>[...p.pokemon_entries].sort((a,b)=>a.entry_number-b.entry_number).forEach(e=>{
   const id=+e.pokemon_species.url.split("/").filter(Boolean).pop();
