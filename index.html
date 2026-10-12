@@ -84,7 +84,8 @@ dialog button{margin-top:14px;padding:9px 20px;border:0;border-radius:999px;back
 <div id="stat"></div>
 </div></header>
 <div class="wrap">
-<div class="tabs" id="tabs"></div>
+<div class="tabs" id="views"></div>
+<div class="tabs" id="tabs" style="padding-top:0"></div>
 <div class="s"><input id="q" placeholder="Search by name or number…"></div>
 <div id="msg">Loading Pokémon…</div>
 <div id="grid"></div>
@@ -162,13 +163,13 @@ GAMES.forEach((g,i)=>$("game").add(new Option(g[0],i)));
 const TC={normal:"#a8a77a",fire:"#ee8130",water:"#6390f0",electric:"#f7d02c",grass:"#7ac74c",ice:"#96d9d6",fighting:"#c22e28",poison:"#a33ea1",ground:"#e2bf65",flying:"#a98ff3",psychic:"#f95587",bug:"#a6b91a",rock:"#b6a136",ghost:"#735797",dragon:"#6f35fc",dark:"#705746",steel:"#b7b7ce",fairy:"#d685ad"};
 let types={};
 async function loadTypes(){
- try{const c=JSON.parse(localStorage.getItem("types1")||"null");if(c&&Object.keys(c).length>900)return c}catch(e){}
+ try{const c=JSON.parse(localStorage.getItem("types2")||"null");if(c&&Object.keys(c).length>1000)return c}catch(e){}
  const res=await Promise.allSettled(Object.keys(TC).map(t=>getJSON(API+"type/"+t)));
  const m={};
  res.forEach((r,i)=>{if(r.status!=="fulfilled")return;const t=Object.keys(TC)[i];
   r.value.pokemon.forEach(e=>{const id=+e.pokemon.url.split("/").filter(Boolean).pop();
-   if(id<=1025){(m[id]=m[id]||[])[e.slot-1]=t}})});
- try{localStorage.setItem("types1",JSON.stringify(m))}catch(e){}
+   (m[id]=m[id]||[])[e.slot-1]=t})});
+ try{localStorage.setItem("types2",JSON.stringify(m))}catch(e){}
  return m;
 }
 const LIGHT=["electric","ice","ground","steel","normal","fairy"];
@@ -199,35 +200,79 @@ async function loadDex(gi){
  try{localStorage.setItem(key,JSON.stringify(l))}catch(e){}
  return l;
 }
+let view="dex",formIds=[],formMeta={};
+const ADJ={alola:"Alolan",galar:"Galarian",hisui:"Hisuian",paldea:"Paldean"};
+const FRE=/^(.+?)-(alola|galar|hisui|paldea)(?:-(.+))?$/;
+const MRE=/-mega(?:-[a-z]+)?$/;
+function formLabel(id){const m=formMeta[id];if(!m)return"?";
+ if(MRE.test(m)){const base=m.replace(MRE,""),ex=(MRE.exec(m)[0].replace(/^-mega-?/,""));
+  return "Mega "+base.replace(/-/g," ")+(ex?" "+(ex.length===1?ex.toUpperCase():ex):"")}
+ const r=FRE.exec(m);
+ return ADJ[r[2]]+" "+r[1].replace(/-/g," ")+(r[3]?" ("+r[3].replace(/-/g," ")+")":"")}
+const formBase=id=>{const m=formMeta[id];if(!m)return 0;return names.indexOf(m.replace(/-(alola|galar|hisui|paldea|mega)(-.*)?$/,"").replace(/-/g," "))+1};
+let allForms=null,megaIds=[];
+async function loadAllForms(){
+ if(allForms)return allForms;
+ let raw=null;
+ try{const c=JSON.parse(localStorage.getItem("allforms1")||"null");if(c&&Date.now()-c.t<6048e5)raw=c.d}catch(e){}
+ if(!raw){
+  const d=await getJSON(API+"pokemon?limit=1000&offset=1025");
+  raw=d.results.map(r=>[+r.url.split("/").filter(Boolean).pop(),r.name]);
+  try{localStorage.setItem("allforms1",JSON.stringify({t:Date.now(),d:raw}))}catch(e){}
+ }
+ raw.forEach(([id,n])=>formMeta[id]=n);
+ return allForms=raw;
+}
+const byBase=(a,b)=>(formBase(a)-formBase(b))||(a-b);
+async function ensureForms(){
+ if(formIds.length)return;
+ const raw=await loadAllForms();
+ formIds=raw.filter(([id,n])=>FRE.test(n)&&!/totem|zen/.test(n)).map(r=>r[0]).sort(byBase);
+}
+async function ensureMegas(){
+ if(megaIds.length)return;
+ const raw=await loadAllForms();
+ megaIds=raw.filter(([id,n])=>MRE.test(n)).map(r=>r[0]).sort(byBase);
+}
 async function selectGame(){
+ if(view!=="dex"){
+  const mg=view==="mega";
+  $("msg").textContent="Loading forms…";$("grid").innerHTML="";
+  try{await(mg?ensureMegas():ensureForms());$("msg").textContent=mg?"Tap a card when you own that Mega Stone.":"";list=mg?megaIds:formIds}
+  catch(e){$("msg").textContent="Could not load forms. Check your connection and try again.";list=[]}
+  render();return;
+ }
  $("msg").textContent="Loading list…";$("grid").innerHTML="";
  try{list=await loadDex($("game").value);$("msg").textContent=""}
  catch(e){$("msg").textContent="Could not load this game's Pokédex – showing the National list.";list=names.map((_,i)=>i+1)}
  render();
 }
 function render(){
- const gi=$("game").value;store[gi]=store[gi]||{};
+ const forms=view!=="dex",mega=view==="mega",gi=forms?view:$("game").value;store[gi]=store[gi]||{};
  let got=store[gi];
- if(gi==="0"){got={};for(const k in store)for(const id in store[k])got[id]=Math.max(got[id]||0,store[k][id])} // national = union of all games
+ if(gi==="0"){got={};for(const k in store)if(k!=="forms"&&k!=="mega")for(const id in store[k])got[id]=Math.max(got[id]||0,store[k][id])} // national = union of all games
  const q=$("q").value.trim().toLowerCase().replace(/^#/,"");
+ [...$("views").children].forEach(b=>b.classList.toggle("on",b.dataset.k===view));
  [...$("tabs").children].forEach(b=>b.classList.toggle("on",b.dataset.k===filter));
+ const tb=$("tabs").children;tb[1].textContent=mega?"Owned":"Caught";tb[3].style.display=mega?"none":"";
+ if(mega&&filter==="shiny")filter="alla";
  let n=0,ns=0,h="";
- const national=GAMES[gi][1][0]==="national",lock=SHINY_LOCK[gi];
+ const national=!forms&&GAMES[gi][1][0]==="national",lock=forms?null:SHINY_LOCK[gi];
  for(const [idx,id] of list.entries()){
-  const name=names[id-1]||"?",has=!!got[id],locked=lock==="all"||SHINY_GLOBAL.includes(id)||(Array.isArray(lock)&&lock.includes(id)),sh=got[id]===2&&!locked,num=String(idx+1);
+  const name=forms?formLabel(id):(names[id-1]||"?"),has=!!got[id],locked=mega||lock==="all"||SHINY_GLOBAL.includes(id)||(Array.isArray(lock)&&lock.includes(id)),sh=got[id]===2&&!locked,num=String(idx+1);
   if(has)n++;
   if(sh)ns++;
   if(filter==="fangad"&&!has)continue;
   if(filter==="saknas"&&has)continue;
   if(filter==="shiny"&&!sh)continue;
-  if(q&&!(name.includes(q)||num===q.replace(/^0+/,"")||String(id)===q.replace(/^0+/,"")))continue;
-  const label=national?pad(id):"#"+num.padStart(3,"0")+" · N"+id;
+  if(q&&!(name.toLowerCase().includes(q)||num===q.replace(/^0+/,"")||String(id)===q.replace(/^0+/,"")))continue;
+  const label=forms?pad(formBase(id)):national?pad(id):"#"+num.padStart(3,"0")+" · N"+id;
   h+=`<div class="c${has?" got":""}${sh?" shiny":""}" data-n="${id}" style="--g:${col(id,0)};--g2:${col(id,1)}"><i class="tp"></i><button class="inf" title="Pokédex entry" aria-label="Open Pokédex entry">i</button>${locked?"":`<button class="sh" title="Shiny" aria-label="Mark as shiny">✨</button>`}<img loading="lazy" alt="" src="${sh?SPRS(id):SPR(id)}"><b>${label}</b><span>${name}</span><div class="tys">${(types[id]||[]).filter(Boolean).map(t=>`<em class="ty${LIGHT.includes(t)?" lt":""}" style="background:${TC[t]}">${t}</em>`).join("")}</div></div>`;
  }
  $("grid").innerHTML=h;
  const t=list.length||1;
  $("fill").style.width=(n/t*100)+"%";
- $("stat").textContent=n+" of "+list.length+" caught ("+Math.round(n/t*100)+"%) · ✨ "+ns+" shiny";
+ $("stat").textContent=mega?n+" of "+list.length+" Mega Stones owned ("+Math.round(n/t*100)+"%)":n+" of "+list.length+" caught ("+Math.round(n/t*100)+"%) · ✨ "+ns+" shiny";
 }
 const esc=t=>String(t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const pretty=t=>esc(String(t).replace(/-/g," "));
@@ -240,13 +285,15 @@ async function openDex(id){
  body.innerHTML="<p>Loading…</p>";
  if(!d.open)d.showModal();
  try{
-  const [sp,pk]=await Promise.all([cached("pokemon-species/"+id),cached("pokemon/"+id)]);
+  const pk=await cached("pokemon/"+id);
+  const sid=+pk.species.url.split("/").filter(Boolean).pop();
+  const sp=await cached("pokemon-species/"+sid);
   const en=sp.flavor_text_entries.filter(e=>e.language.name==="en");
   const genus=(sp.genera.find(g=>g.language.name==="en")||{}).genus||"";
   const tys=pk.types.map(t=>t.type.name);
   const art="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/"+id+".png";
   body.innerHTML=`<div class="dx-top"><img alt="" src="${art}" onerror="this.onerror=null;this.src='${SPR(id)}'">
-  <div><div class="dx-no">${pad(id)}</div><h2>${pretty(names[id-1]||sp.name)}</h2><div class="dx-no">${esc(genus)}</div>
+  <div><div class="dx-no">${pad(sid)}</div><h2>${id>1025?esc(formLabel(id)):pretty(names[id-1]||sp.name)}</h2><div class="dx-no">${esc(genus)}</div>
   <div class="tys">${tys.map(t=>`<em class="ty${LIGHT.includes(t)?" lt":""}" style="background:${TC[t]}">${t}</em>`).join("")}</div></div></div>
   ${en.length?`<select id="dexVer" aria-label="Game version">${en.map((e,i)=>`<option value="${i}">${pretty(e.version.name)}</option>`).join("")}</select>
   <p class="dx-text" id="dexTxt"></p>`:'<p class="dx-text">No Pokédex entry available yet.</p>'}
@@ -264,7 +311,7 @@ $("dexClose").onclick=()=>$("dex").close();
 $("dex").onclick=e=>{if(e.target===$("dex"))$("dex").close()};
 $("grid").onclick=e=>{const c=e.target.closest(".c");if(!c)return;
  if(e.target.closest(".inf")){openDex(+c.dataset.n);return}
- const gi=$("game").value,n=c.dataset.n,g=store[gi];
+ const gi=view!=="dex"?view:$("game").value,n=c.dataset.n,g=store[gi];
  if(gi==="0"&&!e.target.closest(".sh")){
   const from=GAMES.map((_,i)=>i).filter(i=>i&&store[i]&&store[i][n]);
   if(from.length){const m=$("msg");m.textContent="Caught in "+GAMES[from[0]][0]+" – change it in that game.";setTimeout(()=>{if(m.textContent.startsWith("Caught in"))m.textContent=""},3000);return}
@@ -275,6 +322,9 @@ $("grid").onclick=e=>{const c=e.target.closest(".c");if(!c)return;
 $("aboutBtn").onclick=()=>$("about").showModal();
 $("aboutClose").onclick=()=>$("about").close();
 $("about").onclick=e=>{if(e.target===$("about"))$("about").close()};
+[["dex","Pokédex"],["forms","Regional forms"],["mega","Mega evolutions"]].forEach(([k,t])=>{
+ const b=document.createElement("button");b.textContent=t;b.dataset.k=k;
+ b.onclick=()=>{view=k;$("game").style.display=k==="dex"?"":"none";selectGame()};$("views").append(b)});
 $("game").onchange=selectGame;$("q").oninput=render;
 loadTypes().then(t=>{types=t;render()}).catch(()=>{});
 loadNames().then(n=>{names=n;selectGame()}).catch(()=>{$("msg").textContent="Could not reach PokeAPI. Check your internet connection."});
