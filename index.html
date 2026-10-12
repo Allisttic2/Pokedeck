@@ -4,38 +4,55 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Pokedeck</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&family=Nunito:wght@500;700&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#f6f4f0;--card:#fff;--ink:#1d1d1f;--mut:#6b6b70;--red:#d93a3a;--ok:#2e9e5b;--bd:#e0ddd6}
-@media (prefers-color-scheme:dark){:root{--bg:#17181b;--card:#222428;--ink:#f1f1f3;--mut:#9a9ba3;--bd:#35373d}}
-body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif}
-header{background:var(--red);color:#fff;padding:16px}
-h1{margin:0 0 10px;font-size:22px}
+:root{--bg:#f3efe8;--card:#fff;--ink:#22232a;--mut:#767782;--red:#e63946;--red2:#b3202d;--ok:#2e9e5b;--bd:#e6e1d6;--gold:#f2b705;--sh:0 2px 8px rgba(30,20,10,.08)}
+@media (prefers-color-scheme:dark){:root{--bg:#14151a;--card:#212329;--ink:#f1f1f4;--mut:#9b9ca6;--bd:#34363e;--sh:0 2px 8px rgba(0,0,0,.4)}}
+*{box-sizing:border-box}
+body{margin:0;color:var(--ink);font:16px/1.4 Nunito,system-ui,-apple-system,"Segoe UI",sans-serif;
+ background:var(--bg) radial-gradient(circle at 1px 1px,rgba(120,110,90,.12) 1px,transparent 0) 0 0/22px 22px}
 .wrap{max-width:1000px;margin:0 auto}
-select,input{font:inherit;padding:10px;border-radius:10px;border:1px solid var(--bd);background:var(--card);color:var(--ink);width:100%;box-sizing:border-box}
-.bar{height:12px;background:rgba(255,255,255,.35);border-radius:6px;overflow:hidden;margin-top:12px}
-.bar i{display:block;height:100%;background:#fff;width:0;transition:width .3s}
-#stat{margin-top:6px;font-size:14px}
-.tabs{display:flex;gap:6px;padding:12px 16px 8px}
-.tabs button{flex:1;padding:8px;border:1px solid var(--bd);background:var(--card);color:var(--ink);border-radius:10px;font:inherit;cursor:pointer}
-.tabs button.on{background:var(--ink);color:var(--bg)}
+header{position:relative;overflow:hidden;color:#fff;padding:18px 16px 20px;
+ background:linear-gradient(135deg,var(--red),var(--red2));border-bottom:6px solid #1d1d22;box-shadow:0 4px 16px rgba(0,0,0,.2)}
+header::after{content:"";position:absolute;right:-50px;top:-50px;width:210px;height:210px;border-radius:50%;
+ background:linear-gradient(#fff3 0 46%,#1d1d2255 46% 54%,#fff1 54%);border:6px solid #fff3;pointer-events:none}
+header .wrap{position:relative;z-index:1}
+h1{display:flex;align-items:center;gap:10px;margin:0 0 12px;font:600 28px Fredoka,Nunito,system-ui,sans-serif;letter-spacing:.5px}
+.ball{width:30px;height:30px;border-radius:50%;border:3px solid #1d1d22;flex:none;
+ background:radial-gradient(circle,#fff 0 18%,#1d1d22 19% 26%,transparent 27%),linear-gradient(#e63946 0 46%,#1d1d22 46% 54%,#fff 54%)}
+select,input{font:inherit;padding:11px 14px;border-radius:14px;border:2px solid transparent;background:var(--card);color:var(--ink);width:100%;box-shadow:var(--sh)}
+input{border-color:var(--bd)}
+select:focus,input:focus{outline:none;border-color:var(--gold)}
+.bar{height:14px;background:#0003;border-radius:8px;overflow:hidden;margin-top:14px;border:2px solid #1d1d22}
+.bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#ffd23f,#fff3b0);transition:width .4s}
+#stat{margin-top:8px;font-weight:700;font-size:14px;text-shadow:0 1px 2px #0004}
+.tabs{display:flex;gap:6px;padding:14px 16px 10px;flex-wrap:wrap}
+.tabs button{flex:1 1 70px;padding:9px 12px;border:2px solid var(--bd);background:var(--card);color:var(--ink);border-radius:999px;font:600 15px Fredoka,Nunito,sans-serif;cursor:pointer;transition:.15s}
+.tabs button:hover{transform:translateY(-1px)}
+.tabs button.on{background:var(--red);border-color:var(--red);color:#fff;box-shadow:0 3px 10px rgba(230,57,70,.4)}
 .s{padding:0 16px}
-#grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;padding:12px 16px 32px}
-.c{background:var(--card);border:2px solid var(--bd);border-radius:12px;padding:8px 4px;text-align:center;cursor:pointer;user-select:none}
-.c img{width:96px;height:96px;image-rendering:pixelated;opacity:.45;filter:grayscale(1);transition:.2s}
+#grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:12px;padding:16px 16px 40px}
+.c{position:relative;background:var(--card);border:2px solid var(--bd);border-top:5px solid var(--g,#999);border-radius:16px;padding:8px 6px 10px;text-align:center;cursor:pointer;user-select:none;box-shadow:var(--sh);transition:transform .15s,box-shadow .15s}
+.c:hover{transform:translateY(-3px) rotate(-.6deg);box-shadow:0 8px 18px rgba(30,20,10,.18)}
+.c img{display:block;margin:2px auto 4px;width:88px;height:88px;image-rendering:pixelated;border-radius:50%;
+ background:radial-gradient(circle,color-mix(in srgb,var(--g) 28%,transparent),transparent 70%);opacity:.5;filter:grayscale(1);transition:.25s}
 .c.got img{opacity:1;filter:none}
-.c b{display:block;color:var(--mut);font-size:12px;font-weight:600}
-.c span{font-size:14px;text-transform:capitalize;word-break:break-word}
-.c.got{border-color:var(--ok)}
-.c{position:relative}
-.sh{position:absolute;top:2px;right:2px;border:0;background:none;font-size:18px;cursor:pointer;padding:4px;opacity:.35;filter:grayscale(1)}
+.c b{display:inline-block;padding:1px 9px;border-radius:999px;background:color-mix(in srgb,var(--g) 18%,transparent);color:var(--mut);font-size:11px;font-weight:700}
+.c span{display:block;margin-top:4px;font:600 15px Fredoka,Nunito,sans-serif;text-transform:capitalize;word-break:break-word}
+.c.got{border-color:var(--ok);border-top-color:var(--g)}
+.c.got::before{content:"✓";position:absolute;top:8px;left:8px;width:20px;height:20px;line-height:20px;border-radius:50%;background:var(--ok);color:#fff;font-size:12px;font-weight:700}
+.sh{position:absolute;top:4px;right:4px;border:0;background:none;font-size:18px;cursor:pointer;padding:4px;opacity:.3;filter:grayscale(1);transition:.2s}
+.sh:hover{opacity:.8;transform:scale(1.2)}
 .c.shiny .sh{opacity:1;filter:none}
-.c.shiny{border-color:#e6b422}
+.c.shiny{border-color:var(--gold);background:linear-gradient(160deg,color-mix(in srgb,var(--gold) 22%,var(--card)),var(--card) 60%);box-shadow:0 0 0 2px #f2b70544,0 6px 18px #f2b70555}
 #msg{padding:16px;color:var(--mut)}
+.g1{--g:#e63946}.g2{--g:#e0a526}.g3{--g:#2a9d8f}.g4{--g:#4361ee}.g5{--g:#6c757d}.g6{--g:#e56b9e}.g7{--g:#f77f00}.g8{--g:#7b2cbf}.g9{--g:#c1121f}
 </style>
 </head>
 <body>
 <header><div class="wrap">
-<h1>🔴 Pokedeck</h1>
+<h1><span class="ball"></span>Pokedeck</h1>
 <select id="game" aria-label="Spel"></select>
 <div class="bar"><i id="fill"></i></div>
 <div id="stat"></div>
@@ -95,6 +112,7 @@ GAMES.forEach((g,i)=>$("game").add(new Option(g[0],i)));
 [["alla","Alla"],["fangad","Fångade"],["saknas","Saknas"],["shiny","✨ Shiny"]].forEach(([k,t])=>{
  const b=document.createElement("button");b.textContent=t;b.dataset.k=k;
  b.onclick=()=>{filter=k;render()};$("tabs").append(b)});
+const gen=n=>n<=151?1:n<=251?2:n<=386?3:n<=493?4:n<=649?5:n<=721?6:n<=809?7:n<=905?8:9;
 const pad=n=>"#"+String(n).padStart(4,"0");
 const getJSON=async u=>{const r=await fetch(u);if(!r.ok)throw 0;return r.json()};
 
@@ -139,7 +157,7 @@ function render(){
   if(filter==="shiny"&&!sh)continue;
   if(q&&!(name.includes(q)||num===q.replace(/^0+/,"")||String(id)===q.replace(/^0+/,"")))continue;
   const label=national?pad(id):"#"+num.padStart(3,"0")+" · N"+id;
-  h+=`<div class="c${has?" got":""}${sh?" shiny":""}" data-n="${id}">${locked?"":`<button class="sh" title="Shiny" aria-label="Markera som shiny">✨</button>`}<img loading="lazy" alt="" src="${sh?SPRS(id):SPR(id)}"><b>${label}</b><span>${name}</span></div>`;
+  h+=`<div class="c g${gen(id)}${has?" got":""}${sh?" shiny":""}" data-n="${id}">${locked?"":`<button class="sh" title="Shiny" aria-label="Markera som shiny">✨</button>`}<img loading="lazy" alt="" src="${sh?SPRS(id):SPR(id)}"><b>${label}</b><span>${name}</span></div>`;
  }
  $("grid").innerHTML=h;
  const t=list.length||1;
