@@ -126,6 +126,15 @@ dialog button{margin-top:14px;padding:9px 20px;border:0;border-radius:999px;back
 const API="https://pokeapi.co/api/v2/";
 const SPR=id=>"https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/"+id+".png";
 const SPRS=id=>"https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/"+id+".png";
+const SBASE="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/";
+const PH="data:image/svg+xml,"+encodeURIComponent("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><circle cx='32' cy='32' r='26' fill='#c9c9d1' stroke='#1d1d22' stroke-width='3'/><text x='32' y='44' font-size='34' font-weight='700' text-anchor='middle' fill='#fff' font-family='sans-serif'>?</text></svg>");
+// Om en sprite saknas (t.ex. nyare former): prova HOME, sedan official artwork, sedan platshållare
+function imgFall(el,id){
+ const st=+(el.dataset.s||0)+1,sh=el.dataset.sh==="1"?"shiny/":"";
+ el.dataset.s=st;
+ const u=[SBASE+"pokemon/other/home/"+sh+id+".png",SBASE+"pokemon/other/official-artwork/"+sh+id+".png"];
+ if(st<=u.length)el.src=u[st-1];else{el.onerror=null;el.src=PH}
+}
 // [name, [Pokédex slugs on PokeAPI]]  – "national" = all
 const GAMES=[
 ["All Pokémon (National)",["national"]],
@@ -285,7 +294,7 @@ function render(){
   if(filter==="shiny"&&!sh)continue;
   if(q&&!(name.toLowerCase().includes(q)||num===q.replace(/^0+/,"")||String(id)===q.replace(/^0+/,"")))continue;
   const label=forms?pad(formBase(id)):national?pad(id):"#"+num.padStart(3,"0")+" · N"+id;
-  h+=`<div class="c${has?" got":""}${sh?" shiny":""}" data-n="${id}" style="--g:${col(id,0)};--g2:${col(id,1)}"><i class="tp"></i><button class="inf" title="Pokédex entry" aria-label="Open Pokédex entry">i</button>${locked?"":`<button class="sh" title="Shiny" aria-label="Mark as shiny">${STAR}</button>`}<img loading="lazy" alt="" src="${sh?SPRS(id):SPR(id)}"><b>${label}</b><span>${name}</span><div class="tys">${(types[id]||[]).filter(Boolean).map(t=>`<em class="ty${LIGHT.includes(t)?" lt":""}" style="background:${TC[t]}">${t}</em>`).join("")}</div></div>`;
+  h+=`<div class="c${has?" got":""}${sh?" shiny":""}" data-n="${id}" style="--g:${col(id,0)};--g2:${col(id,1)}"><i class="tp"></i><button class="inf" title="Pokédex entry" aria-label="Open Pokédex entry">i</button>${locked?"":`<button class="sh" title="Shiny" aria-label="Mark as shiny">${STAR}</button>`}<img loading="lazy" alt="" src="${sh?SPRS(id):SPR(id)}" data-sh="${sh?1:0}" onerror="imgFall(this,${id})"><b>${label}</b><span>${name}</span><div class="tys">${(types[id]||[]).filter(Boolean).map(t=>`<em class="ty${LIGHT.includes(t)?" lt":""}" style="background:${TC[t]}">${t}</em>`).join("")}</div></div>`;
  }
  if(mega&&h)h='<h3 class="sec">Mega Stones</h3>'+h;
  if(mega){
@@ -322,7 +331,7 @@ async function openDex(id){
   const genus=(sp.genera.find(g=>g.language.name==="en")||{}).genus||"";
   const tys=pk.types.map(t=>t.type.name);
   const art="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/"+id+".png";
-  body.innerHTML=`<div class="dx-top"><img alt="" src="${art}" onerror="this.onerror=null;this.src='${SPR(id)}'">
+  body.innerHTML=`<div class="dx-top"><img alt="" src="${art}" onerror="this.onerror=function(){this.onerror=null;this.src=PH};this.src='${SPR(id)}'">
   <div><div class="dx-no">${pad(sid)}</div><h2>${id>1025?esc(formLabel(id)):pretty(names[id-1]||sp.name)}</h2><div class="dx-no">${esc(genus)}</div>
   <div class="tys">${tys.map(t=>`<em class="ty${LIGHT.includes(t)?" lt":""}" style="background:${TC[t]}">${t}</em>`).join("")}</div></div></div>
   ${en.length?`<select id="dexVer" aria-label="Game version">${en.map((e,i)=>`<option value="${i}">${pretty(e.version.name)}</option>`).join("")}</select>
