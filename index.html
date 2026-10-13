@@ -51,10 +51,11 @@ select:focus,input:focus{outline:none;border-color:var(--gold)}
 .c span{display:block;margin-top:4px;font:600 15px Fredoka,ui-rounded,system-ui,-apple-system,"Segoe UI",sans-serif;text-transform:capitalize;word-break:break-word}
 .c.got{border-color:var(--ok)}
 .tp{position:absolute;left:0;right:0;top:0;height:7px;border-radius:14px 14px 0 0;background:linear-gradient(90deg,var(--g,#9aa0a6),var(--g2,var(--g,#9aa0a6)))}
-.sh{position:absolute;top:4px;right:4px;border:0;background:none;font-size:18px;cursor:pointer;padding:4px;opacity:.3;filter:grayscale(1);transition:.2s}
+.sh{position:absolute;top:4px;right:4px;border:0;background:none;font-size:18px;cursor:pointer;padding:4px;opacity:.55;filter:grayscale(1);transition:.2s}
 .sh:hover{opacity:.8;transform:scale(1.2)}
 .sh{color:#8d8f98;display:flex;align-items:center;justify-content:center}
-.sh .star{width:20px;height:20px}
+.sh{width:42px;height:42px;top:0;right:0;padding:0}
+.sh .star{width:28px;height:28px}
 .c.shiny .sh{opacity:1;filter:none;color:var(--gold)}
 .c.shiny{border-color:var(--gold);background:linear-gradient(160deg,color-mix(in srgb,var(--gold) 22%,var(--card)),var(--card) 60%);box-shadow:0 0 0 2px #f2b70544,0 6px 18px #f2b70555}
 .about{position:absolute;top:0;right:0;padding:6px 14px;border:2px solid #fff8;border-radius:999px;background:#0002;color:#fff;font:600 14px Fredoka,ui-rounded,system-ui,-apple-system,"Segoe UI",sans-serif;cursor:pointer}
@@ -135,7 +136,12 @@ function imgFall(el,id){
  const u=[SBASE+"pokemon/other/home/"+sh+id+".png",SBASE+"pokemon/other/official-artwork/"+sh+id+".png"];
  if(st<=u.length)el.src=u[st-1];else{el.onerror=null;el.src=PH}
 }
-// [name, [Pokédex slugs on PokeAPI]]  – "national" = all
+// HOW TO ADD A NEW GAME: add a line at the END of this list (never in the middle, or saved progress moves).
+//   [ "Game name", ["pokedex-slug-on-PokeAPI"], [fromNo, toNo] ]
+// - slug: the regional Pokédex name on https://pokeapi.co/api/v2/pokedex/ (several slugs are merged in order).
+//   Use ["national"] for the full National Dex.
+// - [fromNo, toNo] (optional): National Dex range used if PokeAPI does not have the game yet, e.g. [1,1100].
+// - Games that cannot have certain shinies: add the game's position to SHINY_LOCK below.
 const GAMES=[
 ["All Pokémon (National)",["national"]],
 ["Red / Blue / Yellow",["kanto"]],
@@ -190,13 +196,13 @@ const gemUri=c=>"data:image/svg+xml,"+encodeURIComponent("<svg xmlns='http://www
 const TC={normal:"#a8a77a",fire:"#ee8130",water:"#6390f0",electric:"#f7d02c",grass:"#7ac74c",ice:"#96d9d6",fighting:"#c22e28",poison:"#a33ea1",ground:"#e2bf65",flying:"#a98ff3",psychic:"#f95587",bug:"#a6b91a",rock:"#b6a136",ghost:"#735797",dragon:"#6f35fc",dark:"#705746",steel:"#b7b7ce",fairy:"#d685ad"};
 let types={};
 async function loadTypes(){
- try{const c=JSON.parse(localStorage.getItem("types2")||"null");if(c&&Object.keys(c).length>1000)return c}catch(e){}
+ const c=cget("types3");if(c&&Object.keys(c).length>1000)return c;
  const res=await Promise.allSettled(Object.keys(TC).map(t=>getJSON(API+"type/"+t)));
  const m={};
  res.forEach((r,i)=>{if(r.status!=="fulfilled")return;const t=Object.keys(TC)[i];
   r.value.pokemon.forEach(e=>{const id=+e.pokemon.url.split("/").filter(Boolean).pop();
    (m[id]=m[id]||[])[e.slot-1]=t})});
- try{localStorage.setItem("types2",JSON.stringify(m))}catch(e){}
+ cset("types3",m);
  return m;
 }
 const LIGHT=["electric","ice","ground","steel","normal","fairy"];
@@ -205,47 +211,51 @@ const gen=n=>n<=151?1:n<=251?2:n<=386?3:n<=493?4:n<=649?5:n<=721?6:n<=809?7:n<=9
 const pad=n=>"#"+String(n).padStart(4,"0");
 const getJSON=async u=>{const r=await fetch(u);if(!r.ok)throw 0;return r.json()};
 
+const WEEK=6048e5;
+const cget=k=>{try{const c=JSON.parse(localStorage.getItem(k)||"null");if(c&&Date.now()-c.t<WEEK)return c.d}catch(e){}return null};
+const cset=(k,d)=>{try{localStorage.setItem(k,JSON.stringify({t:Date.now(),d}))}catch(e){}};
 async function loadNames(){
- try{const c=JSON.parse(localStorage.getItem("names")||"null");if(c&&c.length>=1000)return c}catch(e){}
- const d=await getJSON(API+"pokemon-species?limit=1025");
+ const c=cget("names2");if(c&&c.length>=1000)return c;
+ const d=await getJSON(API+"pokemon-species?limit=2000");
  const n=d.results.map(r=>r.name.replace(/-/g," "));
- try{localStorage.setItem("names",JSON.stringify(n))}catch(e){}
+ cset("names2",n);
  return n;
 }
 async function loadDex(gi){
  const slugs=GAMES[gi][1];
  if(slugs[0]==="national")return names.map((_,i)=>i+1);
- const key="dex2_"+slugs.join("+");
- try{const c=JSON.parse(localStorage.getItem(key)||"null");if(c)return c}catch(e){}
+ const key="dex3_"+slugs.join("+");
+ {const c=cget(key);if(c)return c}
  const res=await Promise.allSettled(slugs.map(s=>getJSON(API+"pokedex/"+s)));
  const parts=res.filter(r=>r.status==="fulfilled").map(r=>r.value);
- if(!parts.length)throw 0;
+ if(!parts.length){const r=GAMES[gi][2];if(r)return Array.from({length:r[1]-r[0]+1},(_,i)=>r[0]+i);throw 0}
  const seen=new Set(),l=[];
  parts.forEach(p=>[...p.pokemon_entries].sort((a,b)=>a.entry_number-b.entry_number).forEach(e=>{
   const id=+e.pokemon_species.url.split("/").filter(Boolean).pop();
   if(!seen.has(id)){seen.add(id);l.push(id)}}));
- try{localStorage.setItem(key,JSON.stringify(l))}catch(e){}
+ cset(key,l);
  return l;
 }
 let view="dex",formIds=[],formMeta={};
 const ADJ={alola:"Alolan",galar:"Galarian",hisui:"Hisuian",paldea:"Paldean"};
-const FRE=/^(.+?)-(alola|galar|hisui|paldea)(?:-(.+))?$/;
+// New region with regional forms? Add it to ADJ above (e.g. kalos:"Kalosian").
+const FRE=new RegExp("^(.+?)-("+Object.keys(ADJ).join("|")+")(?:-(.+))?$");
 const MRE=/-mega(?:-[a-z]+)?$/;
 function formLabel(id){const m=formMeta[id];if(!m)return"?";
  if(MRE.test(m)){const base=m.replace(MRE,""),ex=(MRE.exec(m)[0].replace(/^-mega-?/,""));
   return "Mega "+base.replace(/-/g," ")+(ex?" "+(ex.length===1?ex.toUpperCase():ex):"")}
  const r=FRE.exec(m);
  return ADJ[r[2]]+" "+r[1].replace(/-/g," ")+(r[3]?" ("+r[3].replace(/-/g," ")+")":"")}
-const formBase=id=>{const m=formMeta[id];if(!m)return 0;return names.indexOf(m.replace(/-(alola|galar|hisui|paldea|mega)(-.*)?$/,"").replace(/-/g," "))+1};
+const formBase=id=>{const m=formMeta[id];if(!m)return 0;return names.indexOf(m.replace(new RegExp("-("+Object.keys(ADJ).join("|")+"|mega)(-.*)?$"),"").replace(/-/g," "))+1};
 let allForms=null,megaIds=[];
 async function loadAllForms(){
  if(allForms)return allForms;
- let raw=null;
- try{const c=JSON.parse(localStorage.getItem("allforms1")||"null");if(c&&Date.now()-c.t<6048e5)raw=c.d}catch(e){}
+ const key="allforms_"+names.length;
+ let raw=cget(key);
  if(!raw){
-  const d=await getJSON(API+"pokemon?limit=1000&offset=1025");
+  const d=await getJSON(API+"pokemon?limit=1500&offset="+names.length);
   raw=d.results.map(r=>[+r.url.split("/").filter(Boolean).pop(),r.name]);
-  try{localStorage.setItem("allforms1",JSON.stringify({t:Date.now(),d:raw}))}catch(e){}
+  cset(key,raw);
  }
  raw.forEach(([id,n])=>formMeta[id]=n);
  return allForms=raw;
@@ -332,7 +342,7 @@ async function openDex(id){
   const tys=pk.types.map(t=>t.type.name);
   const art="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/"+id+".png";
   body.innerHTML=`<div class="dx-top"><img alt="" src="${art}" onerror="this.onerror=function(){this.onerror=null;this.src=PH};this.src='${SPR(id)}'">
-  <div><div class="dx-no">${pad(sid)}</div><h2>${id>1025?esc(formLabel(id)):pretty(names[id-1]||sp.name)}</h2><div class="dx-no">${esc(genus)}</div>
+  <div><div class="dx-no">${pad(sid)}</div><h2>${id>10000?esc(formLabel(id)):pretty(names[id-1]||sp.name)}</h2><div class="dx-no">${esc(genus)}</div>
   <div class="tys">${tys.map(t=>`<em class="ty${LIGHT.includes(t)?" lt":""}" style="background:${TC[t]}">${t}</em>`).join("")}</div></div></div>
   ${en.length?`<select id="dexVer" aria-label="Game version">${en.map((e,i)=>`<option value="${i}">${pretty(e.version.name)}</option>`).join("")}</select>
   <p class="dx-text" id="dexTxt"></p>`:'<p class="dx-text">No Pokédex entry available yet.</p>'}
