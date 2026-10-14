@@ -2,12 +2,12 @@
 
 About Pokedeck
 <br>
-Pokedeck is a free tracker for your Pokémon collection. Pick a game, tap a Pokémon to mark it as caught, and tap the ✨ to mark it as shiny.
+Pokedeck is a free tracker for your Pokémon collection. Pick a game, tap a Pokémon to mark it as caught, and tap the star button to mark it as shiny.
 
 How it works
 <br>
 Every game has its own list, in that game's regional Pokédex order. The "All Pokémon (National)" view combines everything you have caught in any game.
-Pokémon that cannot be shiny in a game have no ✨ button.
+Pokémon that cannot be shiny in a game have no star button.
 Your progress is saved only in this browser on this device. It is not uploaded anywhere, and clearing your browser data will erase it.
 There are no accounts, ads or analytics. Fonts are loaded from Google Fonts, and images and data from PokeAPI and GitHub, so those services can see your IP address like any website you visit.
 
