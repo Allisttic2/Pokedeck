@@ -13,6 +13,7 @@
 <meta property="og:image:height" content="630">
 <meta property="og:url" content="https://allisttic2.github.io/Pokedeck/">
 <meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#e63946">
 <meta name="twitter:image" content="https://allisttic2.github.io/Pokedeck/og-image.png">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='3' y='3' width='94' height='94' rx='24' fill='%23e63946' stroke='%231d1d22' stroke-width='5'/><g stroke-linecap='round' stroke-linejoin='round' fill='none'><g transform='rotate(-7 30 50)'><path d='M20 74V26h9a11 11 0 0 1 0 22H20' stroke='%231d1d22' stroke-width='25'/></g><g transform='translate(0 2) rotate(6 66 50)'><path d='M56 26h4a18 24 0 0 1 0 48h-4z' stroke='%231d1d22' stroke-width='25'/></g><g transform='rotate(-7 30 50)'><path d='M20 74V26h9a11 11 0 0 1 0 22H20' stroke='%23ffd23f' stroke-width='13'/><path d='M18 33V43' stroke='%23ffffff' opacity='.85' stroke-width='3.5'/></g><g transform='translate(0 2) rotate(6 66 50)'><path d='M56 26h4a18 24 0 0 1 0 48h-4z' stroke='%23ffd23f' stroke-width='13'/><path d='M54 35V45' stroke='%23ffffff' stroke-width='3.5' opacity='.85'/></g></g><path d='M86 5l2.2 6.8L95 14l-6.8 2.2L86 23l-2.2-6.8L77 14l6.8-2.2z' fill='%23ffffff' stroke='%231d1d22' stroke-width='2.5' stroke-linejoin='round'/></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -60,6 +61,7 @@ select:focus,input:focus{outline:none;border-color:var(--gold)}
 .c.shiny{border-color:var(--gold);background:linear-gradient(160deg,color-mix(in srgb,var(--gold) 22%,var(--card)),var(--card) 60%);box-shadow:0 0 0 2px #f2b70544,0 6px 18px #f2b70555}
 .about{position:absolute;top:0;right:0;padding:6px 14px;border:2px solid #fff8;border-radius:999px;background:#0002;color:#fff;font:600 14px Fredoka,ui-rounded,system-ui,-apple-system,"Segoe UI",sans-serif;cursor:pointer}
 .about:hover{background:#0004}
+.about.inst{right:84px}
 dialog{max-width:480px;width:calc(100% - 32px);border:2px solid var(--bd);border-radius:18px;background:var(--card);color:var(--ink);padding:20px 22px;box-shadow:0 20px 50px rgba(0,0,0,.35);font-size:15px}
 dialog::backdrop{background:rgba(0,0,0,.55)}
 dialog h2{margin:0 0 8px;font:600 22px Fredoka,ui-rounded,system-ui,-apple-system,"Segoe UI",sans-serif}
@@ -114,6 +116,7 @@ dialog button{margin-top:14px;padding:9px 20px;border:0;border-radius:999px;back
 <li>Every game has its own list, in that game's regional Pokédex order. The "All Pokémon (National)" view combines everything you have caught in any game.</li>
 <li>Pokémon that cannot be shiny in a game have no shiny star.</li>
 <li>Your progress is saved only in this browser on this device. It is not uploaded anywhere, and clearing your browser data will erase it.</li>
+<li>Want it on your home screen? Open the <a href="app/">app version</a>, which can be installed and works offline.</li>
 <li>There are no accounts, ads or analytics. Fonts are loaded from Google Fonts, and images and data from PokeAPI and GitHub, so those services can see your IP address like any website you visit.</li>
 </ul>
 <h3>Credits</h3>
@@ -368,6 +371,8 @@ $("grid").onclick=e=>{const c=e.target.closest(".c");if(!c)return;
  if(e.target.closest(".sh"))g[n]=g[n]===2?1:2;
  else if(g[n])delete g[n];else g[n]=1;
  save();render()};
+// The web version has no service worker. Remove any old one left from earlier versions (but keep the app version's).
+if("serviceWorker" in navigator)navigator.serviceWorker.getRegistrations().then(rs=>rs.forEach(r=>{if(!r.scope.includes("/app/"))r.unregister()})).catch(()=>{});
 $("aboutBtn").onclick=()=>$("about").showModal();
 $("aboutClose").onclick=()=>$("about").close();
 $("about").onclick=e=>{if(e.target===$("about"))$("about").close()};

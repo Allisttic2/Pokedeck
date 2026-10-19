@@ -1,0 +1,16 @@
+{
+  "name": "Pokedeck",
+  "short_name": "Pokedeck",
+  "description": "Track every Pokémon you catch across all the games, including shinies, regional forms and Mega Stones.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#e63946",
+  "theme_color": "#e63946",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
