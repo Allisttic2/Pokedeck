@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pokedeck</title>
+<meta name="description" content="Track every Pokémon you catch across all the games, including shinies, regional forms and Mega Stones.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Pokedeck">
+<meta property="og:description" content="Track every Pokémon you catch across all the games, including shinies, regional forms and Mega Stones.">
+<meta property="og:image" content="https://allisttic2.github.io/Pokedeck/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:url" content="https://allisttic2.github.io/Pokedeck/app.html">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="manifest" href="app.webmanifest">
+<meta name="theme-color" content="#e63946">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Pokedeck">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="twitter:image" content="https://allisttic2.github.io/Pokedeck/og-image.png">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='3' y='3' width='94' height='94' rx='24' fill='%23e63946' stroke='%231d1d22' stroke-width='5'/><g stroke-linecap='round' stroke-linejoin='round' fill='none'><g transform='rotate(-7 30 50)'><path d='M20 74V26h9a11 11 0 0 1 0 22H20' stroke='%231d1d22' stroke-width='25'/></g><g transform='translate(0 2) rotate(6 66 50)'><path d='M56 26h4a18 24 0 0 1 0 48h-4z' stroke='%231d1d22' stroke-width='25'/></g><g transform='rotate(-7 30 50)'><path d='M20 74V26h9a11 11 0 0 1 0 22H20' stroke='%23ffd23f' stroke-width='13'/><path d='M18 33V43' stroke='%23ffffff' opacity='.85' stroke-width='3.5'/></g><g transform='translate(0 2) rotate(6 66 50)'><path d='M56 26h4a18 24 0 0 1 0 48h-4z' stroke='%23ffd23f' stroke-width='13'/><path d='M54 35V45' stroke='%23ffffff' stroke-width='3.5' opacity='.85'/></g></g><path d='M86 5l2.2 6.8L95 14l-6.8 2.2L86 23l-2.2-6.8L77 14l6.8-2.2z' fill='%23ffffff' stroke='%231d1d22' stroke-width='2.5' stroke-linejoin='round'/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&family=Nunito:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f3efe8;--card:#fff;--ink:#22232a;--mut:#767782;--red:#e63946;--red2:#b3202d;--ok:#2e9e5b;--bd:#e6e1d6;--gold:#f2b705;--sh:0 2px 8px rgba(30,20,10,.08)}
+@media (prefers-color-scheme:dark){:root{--bg:#14151a;--card:#212329;--ink:#f1f1f4;--mut:#9b9ca6;--bd:#34363e;--sh:0 2px 8px rgba(0,0,0,.4)}}
+*{box-sizing:border-box}
+body{margin:0;color:var(--ink);font:16px/1.4 Nunito,system-ui,-apple-system,"Segoe UI",sans-serif;
+ background:var(--bg) radial-gradient(circle at 1px 1px,rgba(120,110,90,.12) 1px,transparent 0) 0 0/22px 22px}
+.wrap{max-width:1000px;margin:0 auto}
+header{position:relative;overflow:hidden;color:#fff;padding:18px 16px 20px;
+ background:linear-gradient(135deg,var(--red),var(--red2));border-bottom:6px solid #1d1d22;box-shadow:0 4px 16px rgba(0,0,0,.2)}
+header .wrap{position:relative;z-index:1}
+h1{display:flex;align-items:center;gap:10px;margin:0 0 12px;font:600 28px Fredoka,ui-rounded,system-ui,-apple-system,"Segoe UI",sans-serif;letter-spacing:.5px}
+.logo{width:34px;height:34px;flex:none}
+select,input{font:inherit;padding:11px 14px;border-radius:14px;border:2px solid transparent;background:var(--card);color:var(--ink);width:100%;box-shadow:var(--sh)}
+input{border-color:var(--bd)}
+select:focus,input:focus{outline:none;border-color:var(--gold)}
+.bar{height:14px;background:#0003;border-radius:8px;overflow:hidden;margin-top:14px;border:2px solid #1d1d22}
+.bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#ffd23f,#fff3b0);transition:width .4s}
+#stat{margin-top:8px;font-weight:700;font-size:14px;text-shadow:0 1px 2px #0004}
+.tabs{display:flex;gap:6px;padding:14px 16px 10px;flex-wrap:wrap}
+.tabs button{flex:1 1 70px;padding:9px 12px;border:2px solid var(--bd);background:var(--card);color:var(--ink);border-radius:999px;font:600 15px Fredoka,ui-rounded,system-ui,-apple-system,"Segoe UI",sans-serif;cursor:pointer;transition:.15s}
+.tabs button:hover{transform:translateY(-1px)}
+.tabs button.on{background:var(--red);border-color:var(--red);color:#fff;box-shadow:0 3px 10px rgba(230,57,70,.4)}
+.s{padding:0 16px}
+#grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:12px;padding:16px 16px 40px}
+.c{position:relative;background:var(--card);border:2px solid var(--bd);border-radius:16px;padding:8px 6px 10px;text-align:center;cursor:pointer;user-select:none;box-shadow:var(--sh);transition:transform .15s,box-shadow .15s}
+.c:hover{transform:translateY(-3px) rotate(-.6deg);box-shadow:0 8px 18px rgba(30,20,10,.18)}
+.c img{display:block;margin:2px auto 4px;width:88px;height:88px;image-rendering:pixelated;border-radius:50%;
+ background:radial-gradient(circle,color-mix(in srgb,var(--g) 28%,transparent),transparent 70%);opacity:.5;filter:grayscale(1);transition:.25s}
+.c.got img{opacity:1;filter:none}
+.c b{display:inline-block;padding:1px 9px;border-radius:999px;background:color-mix(in srgb,var(--g) 18%,transparent);color:var(--mut);font-size:11px;font-weight:700}
+.c span{display:block;margin-top:4px;font:600 15px Fredoka,ui-rounded,system-ui,-apple-system,"Segoe UI",sans-serif;text-transform:capitalize;word-break:break-word}
+.c.got{border-color:var(--ok)}
+.tp{position:absolute;left:0;right:0;top:0;height:7px;border-radius:14px 14px 0 0;background:linear-gradient(90deg,var(--g,#9aa0a6),var(--g2,var(--g,#9aa0a6)))}
+.sh{position:absolute;top:4px;right:4px;border:0;background:none;font-size:18px;cursor:pointer;padding:4px;opacity:.55;filter:grayscale(1);transition:.2s}
+.sh:hover{opacity:.8;transform:scale(1.2)}
+.sh{color:#8d8f98;display:flex;align-items:center;justify-content:center}
+.sh{width:42px;height:42px;top:0;right:0;padding:0}
+.sh .star{width:28px;height:28px}
+.c.shiny .sh{opacity:1;filter:none;color:var(--gold)}
+.c.shiny{border-color:var(--gold);background:linear-gradient(160deg,color-mix(in srgb,var(--gold) 22%,var(--card)),var(--card) 60%);box-shadow:0 0 0 2px #f2b70544,0 6px 18px #f2b70555}
+.about{position:absolute;top:0;right:0;padding:6px 14px;border:2px solid #fff8;border-radius:999px;background:#0002;color:#fff;font:600 14px Fredoka,ui-rounded,system-ui,-apple-system,"Segoe UI",sans-serif;cursor:pointer}
+.about:hover{background:#0004}
+.about.inst{right:84px}
+dialog{max-width:480px;width:calc(100% - 32px);border:2px solid var(--bd);border-radius:18px;background:var(--card);color:var(--ink);padding:20px 22px;box-shadow:0 20px 50px rgba(0,0,0,.35);font-size:15px}
+dialog::backdrop{background:rgba(0,0,0,.55)}
+dialog h2{margin:0 0 8px;font:600 22px Fredoka,ui-rounded,system-ui,-apple-system,"Segoe UI",sans-serif}
+dialog h3{margin:16px 0 4px;font:600 16px Fredoka,ui-rounded,system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--red)}
+dialog p,dialog ul{margin:0 0 6px}dialog ul{padding-left:20px}
+dialog a{color:var(--red)}
+dialog button{margin-top:14px;padding:9px 20px;border:0;border-radius:999px;background:var(--red);color:#fff;font:600 15px Fredoka,ui-rounded,system-ui,-apple-system,"Segoe UI",sans-serif;cursor:pointer}
+.tys{display:flex;justify-content:center;gap:4px;margin-top:5px;min-height:17px;flex-wrap:wrap}
+.ty{font-style:normal;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;padding:1px 7px;border-radius:999px;color:#fff;line-height:1.5}
+.ty.lt{color:#1d1d22}
+.c.got b::before{content:"✓ ";color:var(--ok);font-weight:700}
+.inf{position:absolute;top:8px;left:6px;width:24px;height:24px;border:0;border-radius:50%;background:color-mix(in srgb,var(--g) 22%,transparent);color:var(--ink);font:700 14px Fredoka,system-ui,sans-serif;cursor:pointer;padding:0;line-height:24px}
+.inf:hover{background:var(--g);color:#fff}
+#dex{max-width:520px}
+.dx-top{display:flex;gap:14px;align-items:center}
+.dx-top img{width:120px;height:120px;object-fit:contain;flex:none;background:radial-gradient(circle,color-mix(in srgb,var(--g) 30%,transparent),transparent 70%)}
+.dx-top h2{margin:0;text-transform:capitalize}
+.dx-no{color:var(--mut);font-size:13px;font-weight:700}
+.dx-top .tys{justify-content:flex-start}
+.dx-text{margin:14px 0 6px;min-height:3.2em;font-style:italic}
+#dexVer{padding:6px 10px;border-radius:10px;font-size:13px;box-shadow:none;border:2px solid var(--bd);width:auto;margin:0 0 4px}
+.dx-meta{display:flex;gap:16px;flex-wrap:wrap;margin:8px 0;font-size:14px}
+.st{display:grid;grid-template-columns:34px 30px 1fr;gap:6px;align-items:center;font-size:12px;margin:3px 0}
+.st i{display:block;height:8px;border-radius:4px;background:var(--g)}
+.sec{grid-column:1/-1;margin:10px 0 0;font:600 18px Fredoka,ui-rounded,system-ui,sans-serif}
+.c.z img{width:64px;height:64px;margin:14px auto 6px;background:none;image-rendering:auto}
+#msg{padding:16px;color:var(--mut)}
+.g1{--g:#e63946}.g2{--g:#e0a526}.g3{--g:#2a9d8f}.g4{--g:#4361ee}.g5{--g:#6c757d}.g6{--g:#e56b9e}.g7{--g:#f77f00}.g8{--g:#7b2cbf}.g9{--g:#c1121f}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+<h1><svg class="logo" viewBox="0 0 100 100" aria-hidden="true"><rect x='3' y='3' width='94' height='94' rx='24' fill='#e63946' stroke='#1d1d22' stroke-width='5'/><g stroke-linecap='round' stroke-linejoin='round' fill='none'><g transform='rotate(-7 30 50)'><path d='M20 74V26h9a11 11 0 0 1 0 22H20' stroke='#1d1d22' stroke-width='25'/></g><g transform='translate(0 2) rotate(6 66 50)'><path d='M56 26h4a18 24 0 0 1 0 48h-4z' stroke='#1d1d22' stroke-width='25'/></g><g transform='rotate(-7 30 50)'><path d='M20 74V26h9a11 11 0 0 1 0 22H20' stroke='#ffd23f' stroke-width='13'/><path d='M18 33V43' stroke='#ffffff' opacity='.85' stroke-width='3.5'/></g><g transform='translate(0 2) rotate(6 66 50)'><path d='M56 26h4a18 24 0 0 1 0 48h-4z' stroke='#ffd23f' stroke-width='13'/><path d='M54 35V45' stroke='#ffffff' stroke-width='3.5' opacity='.85'/></g></g><path d='M86 5l2.2 6.8L95 14l-6.8 2.2L86 23l-2.2-6.8L77 14l6.8-2.2z' fill='#ffffff' stroke='#1d1d22' stroke-width='2.5' stroke-linejoin='round'/></svg>Pokedeck</h1>
+<button id="installBtn" class="about inst" type="button" style="display:none">Install app</button>
+<button id="aboutBtn" class="about" type="button">About</button>
+<select id="game" aria-label="Game"></select>
+<div class="bar"><i id="fill"></i></div>
+<div id="stat"></div>
+</div></header>
+<div class="wrap">
+<div class="tabs" id="views"></div>
+<div class="tabs" id="tabs" style="padding-top:0"></div>
+<div class="s"><input id="q" placeholder="Search by name or number…"></div>
+<div id="msg">Loading Pokémon…</div>
+<div id="grid"></div>
+</div>
+<dialog id="dex"><div id="dexBody"></div><button id="dexClose" type="button">Close</button></dialog>
+<dialog id="about">
+<h2>About Pokedeck</h2>
+<p>Pokedeck is a free tracker for your Pokémon collection. Pick a game, tap a Pokémon to mark it as caught, and tap the star on a card to mark it as shiny.</p>
+<h3>How it works</h3>
+<ul>
+<li>Every game has its own list, in that game's regional Pokédex order. The "All Pokémon (National)" view combines everything you have caught in any game.</li>
+<li>Pokémon that cannot be shiny in a game have no shiny star.</li>
+<li>Your progress is saved only in this browser on this device. It is not uploaded anywhere, and clearing your browser data will erase it.</li>
+<li>Prefer the plain website? <a href="./" target="_blank" rel="noopener">Open the web version</a>.</li>
+<li>Install it like an app: in your browser menu choose "Install app" or "Add to Home Screen". It then opens full-screen and also works offline for everything you have already viewed.</li>
+<li>There are no accounts, ads or analytics. Fonts are loaded from Google Fonts, and images and data from PokeAPI and GitHub, so those services can see your IP address like any website you visit.</li>
+</ul>
+<h3>Credits</h3>
+<p>Names, sprites and Pokédex lists come from <a href="https://pokeapi.co" target="_blank" rel="noopener">PokeAPI</a>. Shiny-lock information is based on <a href="https://www.serebii.net/games/shiny.shtml" target="_blank" rel="noopener">Serebii.net</a> and may be out of date or incomplete.</p>
+<p>Fonts: <a href="https://fonts.google.com/specimen/Fredoka" target="_blank" rel="noopener">Fredoka</a> and <a href="https://fonts.google.com/specimen/Nunito" target="_blank" rel="noopener">Nunito</a>, both open-source fonts licensed under the <a href="https://openfontlicense.org" target="_blank" rel="noopener">SIL Open Font License</a>, served by Google Fonts. The fonts belong to their respective designers and are not part of this project's own work.</p>
+<h3>Disclaimer</h3>
+<p>This is an unofficial fan project. It is not affiliated with, endorsed by or sponsored by Nintendo, Game Freak, Creatures Inc. or The Pokémon Company. Pokémon and all related names and images are trademarks and copyrights of their respective owners.</p>
+<button id="aboutClose" type="button">Close</button>
+</dialog>
+<script>
+const API="https://pokeapi.co/api/v2/";
+const SPR=id=>"https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/"+id+".png";
+const SPRS=id=>"https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/"+id+".png";
+const SBASE="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/";
+const PH="data:image/svg+xml,"+encodeURIComponent("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><circle cx='32' cy='32' r='26' fill='#c9c9d1' stroke='#1d1d22' stroke-width='3'/><text x='32' y='44' font-size='34' font-weight='700' text-anchor='middle' fill='#fff' font-family='sans-serif'>?</text></svg>");
+// Om en sprite saknas (t.ex. nyare former): prova HOME, sedan official artwork, sedan platshållare
+function imgFall(el,id){
+ const st=+(el.dataset.s||0)+1,sh=el.dataset.sh==="1"?"shiny/":"";
+ el.dataset.s=st;
+ const u=[SBASE+"pokemon/other/home/"+sh+id+".png",SBASE+"pokemon/other/official-artwork/"+sh+id+".png"];
+ if(st<=u.length)el.src=u[st-1];else{el.onerror=null;el.src=PH}
+}
+// HOW TO ADD A NEW GAME: add a line at the END of this list (never in the middle, or saved progress moves).
+//   [ "Game name", ["pokedex-slug-on-PokeAPI"], [fromNo, toNo] ]
+// - slug: the regional Pokédex name on https://pokeapi.co/api/v2/pokedex/ (several slugs are merged in order).
+//   Use ["national"] for the full National Dex.
+// - [fromNo, toNo] (optional): National Dex range used if PokeAPI does not have the game yet, e.g. [1,1100].
+// - Games that cannot have certain shinies: add the game's position to SHINY_LOCK below.
+const GAMES=[
+["All Pokémon (National)",["national"]],
+["Red / Blue / Yellow",["kanto"]],
+["Gold / Silver / Crystal",["original-johto"]],
+["Ruby / Sapphire / Emerald",["hoenn"]],
+["FireRed / LeafGreen",["kanto"]],
+["Diamond / Pearl",["original-sinnoh"]],
+["Platinum",["extended-sinnoh"]],
+["HeartGold / SoulSilver",["updated-johto"]],
+["Black / White",["original-unova"]],
+["Black 2 / White 2",["updated-unova"]],
+["X / Y",["kalos-central","kalos-coastal","kalos-mountain"]],
+["Omega Ruby / Alpha Sapphire",["updated-hoenn"]],
+["Sun / Moon / Ultra Sun / Ultra Moon",["updated-alola"]],
+["Let's Go Pikachu / Eevee",["letsgo-kanto"]],
+["Sword / Shield (+ Isle of Armor, Crown Tundra)",["galar","isle-of-armor","crown-tundra"]],
+["Brilliant Diamond / Shining Pearl",["original-sinnoh"]],
+["Legends: Arceus",["hisui"]],
+["Scarlet / Violet (+ DLC)",["paldea","kitakami","blueberry"]],
+["Legends: Z-A (+ Mega Dimension)",["lumiose-city","hyperspace"]]
+];
+const $=id=>document.getElementById(id);
+// Pokémon that cannot be shiny (source: Serebii.net/games/shiny.shtml).
+// SHINY_GLOBAL = locked in every game. SHINY_LOCK = key is the game's position in the list above
+// (0 = first, 1 = Red/Blue/Yellow ...), value is "all" or a list of National Dex numbers.
+const SHINY_GLOBAL=[494,720,789,790,801,802,891,892,893,896,897,898,1009,1010,1014,1015,1016,1017,1020,1021,1022,1023,1024,1025];
+const SHINY_LOCK={
+ 1:"all",
+ 8:[643,644],
+ 9:[643,644],
+ 10:[144,145,146,150,716,717,718],
+ 11:[382,383,384,386],
+ 12:[718,785,786,787,788,791,792,800],
+ 14:[144,145,146,647,772,803,888,889,890],
+ 15:[151,385],
+ 16:[480,481,482,483,484,485,486,487,488,489,490,491,492,493,641,642,645,905],
+
+ 18:[150,382,383,384,485,491,647,648,649,716,717,718,719,721,807,808,809,999],
+ 17:[144,145,146,243,244,245,249,250,380,381,382,383,384,638,639,640,643,644,646,648,791,792,800,999,1001,1002,1003,1004,1007,1008]
+};
+let names=[],list=[],filter="alla",store={};
+try{store=JSON.parse(localStorage.getItem("dex")||"{}")}catch(e){}
+const save=()=>{try{localStorage.setItem("dex",JSON.stringify(store))}catch(e){}};
+GAMES.forEach((g,i)=>$("game").add(new Option(g[0],i)));
+[["alla","All"],["fangad","Caught"],["saknas","Missing"],["shiny","Shiny"]].forEach(([k,t])=>{
+ const b=document.createElement("button");b.textContent=t;b.dataset.k=k;
+ b.onclick=()=>{filter=k;render()};$("tabs").append(b)});
+const STAR='<svg class="star" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l2.2 7.8L22 12l-7.8 2.2L12 22l-2.2-7.8L2 12l7.8-2.2z" fill="currentColor" stroke="#1d1d22" stroke-width="1.4" stroke-linejoin="round"/></svg>';
+const ZC=[["normalium-z","Normalium Z","normal"],["firium-z","Firium Z","fire"],["waterium-z","Waterium Z","water"],["electrium-z","Electrium Z","electric"],["grassium-z","Grassium Z","grass"],["icium-z","Icium Z","ice"],["fightinium-z","Fightinium Z","fighting"],["poisonium-z","Poisonium Z","poison"],["groundium-z","Groundium Z","ground"],["flyinium-z","Flyinium Z","flying"],["psychium-z","Psychium Z","psychic"],["buginium-z","Buginium Z","bug"],["rockium-z","Rockium Z","rock"],["ghostium-z","Ghostium Z","ghost"],["dragonium-z","Dragonium Z","dragon"],["darkinium-z","Darkinium Z","dark"],["steelium-z","Steelium Z","steel"],["fairium-z","Fairium Z","fairy"],
+["aloraichium-z","Aloraichium Z",null,"Alolan Raichu"],["decidium-z","Decidium Z",null,"Decidueye"],["eevium-z","Eevium Z",null,"Eevee"],["incinium-z","Incinium Z",null,"Incineroar"],["kommonium-z","Kommonium Z",null,"Kommo-o"],["lunalium-z","Lunalium Z",null,"Lunala"],["lycanium-z","Lycanium Z",null,"Lycanroc"],["marshadium-z","Marshadium Z",null,"Marshadow"],["mewnium-z","Mewnium Z",null,"Mew"],["mimikium-z","Mimikium Z",null,"Mimikyu"],["pikanium-z","Pikanium Z",null,"Pikachu"],["pikashunium-z","Pikashunium Z",null,"Cap Pikachu"],["primarium-z","Primarium Z",null,"Primarina"],["snorlium-z","Snorlium Z",null,"Snorlax"],["solganium-z","Solganium Z",null,"Solgaleo"],["tapunium-z","Tapunium Z",null,"Tapu guardians"],["ultranecrozium-z","Ultranecrozium Z",null,"Necrozma"]];
+const gemUri=c=>"data:image/svg+xml,"+encodeURIComponent("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><path d='M32 6l20 14-8 34H20L12 20z' fill='"+c+"' stroke='#1d1d22' stroke-width='4' stroke-linejoin='round'/><path d='M20 20h24M32 6v14' stroke='#fff' stroke-opacity='.6' stroke-width='3'/></svg>");
+const TC={normal:"#a8a77a",fire:"#ee8130",water:"#6390f0",electric:"#f7d02c",grass:"#7ac74c",ice:"#96d9d6",fighting:"#c22e28",poison:"#a33ea1",ground:"#e2bf65",flying:"#a98ff3",psychic:"#f95587",bug:"#a6b91a",rock:"#b6a136",ghost:"#735797",dragon:"#6f35fc",dark:"#705746",steel:"#b7b7ce",fairy:"#d685ad"};
+let types={};
+async function loadTypes(){
+ const c=cget("types3");if(c&&Object.keys(c).length>1000)return c;
+ const res=await Promise.allSettled(Object.keys(TC).map(t=>getJSON(API+"type/"+t)));
+ const m={};
+ res.forEach((r,i)=>{if(r.status!=="fulfilled")return;const t=Object.keys(TC)[i];
+  r.value.pokemon.forEach(e=>{const id=+e.pokemon.url.split("/").filter(Boolean).pop();
+   (m[id]=m[id]||[])[e.slot-1]=t})});
+ cset("types3",m);
+ return m;
+}
+const LIGHT=["electric","ice","ground","steel","normal","fairy"];
+const col=(id,i)=>{const t=types[id]||[];const a=TC[t[0]]||"#9aa0a6";return i?(TC[t[1]]||a):a};
+const gen=n=>n<=151?1:n<=251?2:n<=386?3:n<=493?4:n<=649?5:n<=721?6:n<=809?7:n<=905?8:9;
+const pad=n=>"#"+String(n).padStart(4,"0");
+const getJSON=async u=>{const r=await fetch(u);if(!r.ok)throw 0;return r.json()};
+
+const WEEK=6048e5;
+const cget=k=>{try{const c=JSON.parse(localStorage.getItem(k)||"null");if(c&&Date.now()-c.t<WEEK)return c.d}catch(e){}return null};
+const cset=(k,d)=>{try{localStorage.setItem(k,JSON.stringify({t:Date.now(),d}))}catch(e){}};
+async function loadNames(){
+ const c=cget("names2");if(c&&c.length>=1000)return c;
+ const d=await getJSON(API+"pokemon-species?limit=2000");
+ const n=d.results.map(r=>r.name.replace(/-/g," "));
+ cset("names2",n);
+ return n;
+}
+async function loadDex(gi){
+ const slugs=GAMES[gi][1];
+ if(slugs[0]==="national")return names.map((_,i)=>i+1);
+ const key="dex3_"+slugs.join("+");
+ {const c=cget(key);if(c)return c}
+ const res=await Promise.allSettled(slugs.map(s=>getJSON(API+"pokedex/"+s)));
+ const parts=res.filter(r=>r.status==="fulfilled").map(r=>r.value);
+ if(!parts.length){const r=GAMES[gi][2];if(r)return Array.from({length:r[1]-r[0]+1},(_,i)=>r[0]+i);throw 0}
+ const seen=new Set(),l=[];
+ parts.forEach(p=>[...p.pokemon_entries].sort((a,b)=>a.entry_number-b.entry_number).forEach(e=>{
+  const id=+e.pokemon_species.url.split("/").filter(Boolean).pop();
+  if(!seen.has(id)){seen.add(id);l.push(id)}}));
+ cset(key,l);
+ return l;
+}
+let view="dex",formIds=[],formMeta={};
+const ADJ={alola:"Alolan",galar:"Galarian",hisui:"Hisuian",paldea:"Paldean"};
+// New region with regional forms? Add it to ADJ above (e.g. kalos:"Kalosian").
+const FRE=new RegExp("^(.+?)-("+Object.keys(ADJ).join("|")+")(?:-(.+))?$");
+const MRE=/-mega(?:-[a-z]+)?$/;
+function formLabel(id){const m=formMeta[id];if(!m)return"?";
+ if(MRE.test(m)){const base=m.replace(MRE,""),ex=(MRE.exec(m)[0].replace(/^-mega-?/,""));
+  return "Mega "+base.replace(/-/g," ")+(ex?" "+(ex.length===1?ex.toUpperCase():ex):"")}
+ const r=FRE.exec(m);
+ return ADJ[r[2]]+" "+r[1].replace(/-/g," ")+(r[3]?" ("+r[3].replace(/-/g," ")+")":"")}
+const formBase=id=>{const m=formMeta[id];if(!m)return 0;return names.indexOf(m.replace(new RegExp("-("+Object.keys(ADJ).join("|")+"|mega)(-.*)?$"),"").replace(/-/g," "))+1};
+let allForms=null,megaIds=[];
+async function loadAllForms(){
+ if(allForms)return allForms;
+ const key="allforms_"+names.length;
+ let raw=cget(key);
+ if(!raw){
+  const d=await getJSON(API+"pokemon?limit=1500&offset="+names.length);
+  raw=d.results.map(r=>[+r.url.split("/").filter(Boolean).pop(),r.name]);
+  cset(key,raw);
+ }
+ raw.forEach(([id,n])=>formMeta[id]=n);
+ return allForms=raw;
+}
+const byBase=(a,b)=>(formBase(a)-formBase(b))||(a-b);
+async function ensureForms(){
+ if(formIds.length)return;
+ const raw=await loadAllForms();
+ formIds=raw.filter(([id,n])=>FRE.test(n)&&!/totem|zen/.test(n)).map(r=>r[0]).sort(byBase);
+}
+async function ensureMegas(){
+ if(megaIds.length)return;
+ const raw=await loadAllForms();
+ megaIds=raw.filter(([id,n])=>MRE.test(n)).map(r=>r[0]).sort(byBase);
+}
+async function selectGame(){
+ if(view!=="dex"){
+  const mg=view==="mega";
+  $("msg").textContent="Loading forms…";$("grid").innerHTML="";
+  try{await(mg?ensureMegas():ensureForms());$("msg").textContent=mg?"Tap a card when you own that Mega Stone or Z-Crystal.":"";list=mg?megaIds:formIds}
+  catch(e){$("msg").textContent="Could not load forms. Check your connection and try again.";list=[]}
+  render();return;
+ }
+ $("msg").textContent="Loading list…";$("grid").innerHTML="";
+ try{list=await loadDex($("game").value);$("msg").textContent=""}
+ catch(e){$("msg").textContent="Could not load this game's Pokédex – showing the National list.";list=names.map((_,i)=>i+1)}
+ render();
+}
+function render(){
+ const forms=view!=="dex",mega=view==="mega",gi=forms?view:$("game").value;store[gi]=store[gi]||{};
+ let got=store[gi];
+ if(gi==="0"){got={};for(const k in store)if(k!=="forms"&&k!=="mega")for(const id in store[k])got[id]=Math.max(got[id]||0,store[k][id])} // national = union of all games
+ const q=$("q").value.trim().toLowerCase().replace(/^#/,"");
+ [...$("views").children].forEach(b=>b.classList.toggle("on",b.dataset.k===view));
+ [...$("tabs").children].forEach(b=>b.classList.toggle("on",b.dataset.k===filter));
+ const tb=$("tabs").children;tb[1].textContent=mega?"Owned":"Caught";tb[3].style.display=mega?"none":"";
+ if(mega&&filter==="shiny")filter="alla";
+ let n=0,ns=0,zn=0,h="";
+ const national=!forms&&GAMES[gi][1][0]==="national",lock=forms?null:SHINY_LOCK[gi];
+ for(const [idx,id] of list.entries()){
+  const name=forms?formLabel(id):(names[id-1]||"?"),has=!!got[id],locked=mega||lock==="all"||SHINY_GLOBAL.includes(id)||(Array.isArray(lock)&&lock.includes(id)),sh=got[id]===2&&!locked,num=String(idx+1);
+  if(has)n++;
+  if(sh)ns++;
+  if(filter==="fangad"&&!has)continue;
+  if(filter==="saknas"&&has)continue;
+  if(filter==="shiny"&&!sh)continue;
+  if(q&&!(name.toLowerCase().includes(q)||num===q.replace(/^0+/,"")||String(id)===q.replace(/^0+/,"")))continue;
+  const label=forms?pad(formBase(id)):national?pad(id):"#"+num.padStart(3,"0")+" · N"+id;
+  h+=`<div class="c${has?" got":""}${sh?" shiny":""}" data-n="${id}" style="--g:${col(id,0)};--g2:${col(id,1)}"><i class="tp"></i><button class="inf" title="Pokédex entry" aria-label="Open Pokédex entry">i</button>${locked?"":`<button class="sh" title="Shiny" aria-label="Mark as shiny">${STAR}</button>`}<img loading="lazy" alt="" src="${sh?SPRS(id):SPR(id)}" data-sh="${sh?1:0}" onerror="imgFall(this,${id})"><b>${label}</b><span>${name}</span><div class="tys">${(types[id]||[]).filter(Boolean).map(t=>`<em class="ty${LIGHT.includes(t)?" lt":""}" style="background:${TC[t]}">${t}</em>`).join("")}</div></div>`;
+ }
+ if(mega&&h)h='<h3 class="sec">Mega Stones</h3>'+h;
+ if(mega){
+  let zh="";
+  ZC.forEach(([slug,zname,tp,forWho])=>{
+   const key="z-"+slug,has=!!got[key];if(has)zn++;
+   if(filter==="fangad"&&!has)return;if(filter==="saknas"&&has)return;
+   if(q&&!(zname.toLowerCase().includes(q)||(tp&&tp.includes(q))||(forWho&&forWho.toLowerCase().includes(q))))return;
+   const c1=tp?TC[tp]:"#ffd23f",lbl=tp?`<em class="ty${LIGHT.includes(tp)?" lt":""}" style="background:${TC[tp]}">${tp}</em>`:`<em class="ty lt" style="background:#ffd23f">${forWho}</em>`;
+   zh+=`<div class="c z${has?" got":""}" data-n="${key}" style="--g:${c1};--g2:${c1}"><i class="tp"></i><img loading="lazy" alt="" src="${gemUri(c1)}"><b>${tp?"Type":"Exclusive"}</b><span>${zname}</span><div class="tys">${lbl}</div></div>`;
+  });
+  if(zh)h+='<h3 class="sec">Z-Crystals</h3>'+zh;
+ }
+ $("grid").innerHTML=h;
+ const t=mega?(list.length+ZC.length)||1:list.length||1;
+ $("fill").style.width=((mega?n+zn:n)/t*100)+"%";
+ $("stat").textContent=mega?"Mega Stones: "+n+"/"+list.length+" · Z-Crystals: "+zn+"/"+ZC.length:n+" of "+list.length+" caught ("+Math.round(n/t*100)+"%) · "+ns+" shiny";
+}
+const esc=t=>String(t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const pretty=t=>esc(String(t).replace(/-/g," "));
+const memo={};
+const cached=async u=>memo[u]||(memo[u]=await getJSON(API+u));
+const STAT={hp:"HP","attack":"ATK","defense":"DEF","special-attack":"SpA","special-defense":"SpD","speed":"SPE"};
+async function openDex(id){
+ const body=$("dexBody"),d=$("dex");
+ d.style.setProperty("--g",col(id,0));
+ body.innerHTML="<p>Loading…</p>";
+ if(!d.open)d.showModal();
+ try{
+  const pk=await cached("pokemon/"+id);
+  const sid=+pk.species.url.split("/").filter(Boolean).pop();
+  const sp=await cached("pokemon-species/"+sid);
+  const en=sp.flavor_text_entries.filter(e=>e.language.name==="en");
+  const genus=(sp.genera.find(g=>g.language.name==="en")||{}).genus||"";
+  const tys=pk.types.map(t=>t.type.name);
+  const art="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/"+id+".png";
+  body.innerHTML=`<div class="dx-top"><img alt="" src="${art}" onerror="this.onerror=function(){this.onerror=null;this.src=PH};this.src='${SPR(id)}'">
+  <div><div class="dx-no">${pad(sid)}</div><h2>${id>10000?esc(formLabel(id)):pretty(names[id-1]||sp.name)}</h2><div class="dx-no">${esc(genus)}</div>
+  <div class="tys">${tys.map(t=>`<em class="ty${LIGHT.includes(t)?" lt":""}" style="background:${TC[t]}">${t}</em>`).join("")}</div></div></div>
+  ${en.length?`<select id="dexVer" aria-label="Game version">${en.map((e,i)=>`<option value="${i}">${pretty(e.version.name)}</option>`).join("")}</select>
+  <p class="dx-text" id="dexTxt"></p>`:'<p class="dx-text">No Pokédex entry available yet.</p>'}
+  <div class="dx-meta"><span><b>Height</b> ${pk.height/10} m</span><span><b>Weight</b> ${pk.weight/10} kg</span>
+  <span><b>Abilities</b> ${pk.abilities.map(a=>pretty(a.ability.name)+(a.is_hidden?" (hidden)":"")).join(", ")}</span></div>
+  ${pk.stats.map(x=>`<div class="st"><span>${STAT[x.stat.name]||esc(x.stat.name)}</span><b>${x.base_stat}</b><i style="width:${Math.min(100,x.base_stat/255*100)}%"></i></div>`).join("")}`;
+  if(en.length){
+   const show=i=>{$("dexTxt").textContent=en[i].flavor_text.replace(/[\n\f\u00ad]/g," ").replace(/\s+/g," ");};
+   $("dexVer").value=en.length-1;show(en.length-1);
+   $("dexVer").onchange=e=>show(+e.target.value);
+  }
+ }catch(e){body.innerHTML="<p>Could not load this entry. Check your connection and try again.</p>"}
+}
+$("dexClose").onclick=()=>$("dex").close();
+$("dex").onclick=e=>{if(e.target===$("dex"))$("dex").close()};
+$("grid").onclick=e=>{const c=e.target.closest(".c");if(!c)return;
+ if(e.target.closest(".inf")){openDex(+c.dataset.n);return}
+ const gi=view!=="dex"?view:$("game").value,n=c.dataset.n,g=store[gi];
+ if(gi==="0"&&!e.target.closest(".sh")){
+  const from=GAMES.map((_,i)=>i).filter(i=>i&&store[i]&&store[i][n]);
+  if(from.length){const m=$("msg");m.textContent="Caught in "+GAMES[from[0]][0]+" – change it in that game.";setTimeout(()=>{if(m.textContent.startsWith("Caught in"))m.textContent=""},3000);return}
+ }
+ if(e.target.closest(".sh"))g[n]=g[n]===2?1:2;
+ else if(g[n])delete g[n];else g[n]=1;
+ save();render()};
+let installEv=null;
+addEventListener("beforeinstallprompt",e=>{e.preventDefault();installEv=e;$("installBtn").style.display=""});
+addEventListener("appinstalled",()=>{installEv=null;$("installBtn").style.display="none"});
+$("installBtn").onclick=async()=>{if(!installEv)return;installEv.prompt();await installEv.userChoice;installEv=null;$("installBtn").style.display="none"};
+if("serviceWorker" in navigator&&location.protocol.startsWith("http"))addEventListener("load",()=>navigator.serviceWorker.register("app-sw.js",{scope:"app.html"}).catch(()=>{}));
+$("aboutBtn").onclick=()=>$("about").showModal();
+$("aboutClose").onclick=()=>$("about").close();
+$("about").onclick=e=>{if(e.target===$("about"))$("about").close()};
+[["dex","Pokédex"],["forms","Regional forms"],["mega","Mega & Z-Crystals"]].forEach(([k,t])=>{
+ const b=document.createElement("button");b.textContent=t;b.dataset.k=k;
+ b.onclick=()=>{view=k;$("game").style.display=k==="dex"?"":"none";selectGame()};$("views").append(b)});
+$("game").onchange=selectGame;$("q").oninput=render;
+loadTypes().then(t=>{types=t;render()}).catch(()=>{});
+loadNames().then(n=>{names=n;selectGame()}).catch(()=>{$("msg").textContent="Could not reach PokeAPI. Check your internet connection."});
+</script>
+</body>
+</html>

@@ -7,7 +7,7 @@ A free Pokédex tracker for your Pokémon collection. Pick a game, tap a Pokémo
 | Version | Link | Good for |
 | --- | --- | --- |
 | **Web version** | https://allisttic2.github.io/Pokedeck/ | Just open it in any browser. Nothing to install. |
-| **App version** | https://allisttic2.github.io/Pokedeck/app/ | Install it on your home screen. Opens full-screen and keeps working offline for everything you have already viewed. |
+| **App version** | https://allisttic2.github.io/Pokedeck/app.html | Install it on your home screen. Opens full-screen and keeps working offline for everything you have already viewed. |
 
 Both versions are the same tracker. The app version simply adds the install button and offline support.
 
@@ -19,7 +19,7 @@ Both versions are the same tracker. The app version simply adds the install butt
 
 ## Download
 
-Click the green **Code** button on this page and choose **Download ZIP**. Unzip it and open `index.html` (web version) or `app/index.html` (app version) in your browser. An internet connection is still needed the first time, because names and pictures are loaded from PokeAPI.
+Click the green **Code** button on this page and choose **Download ZIP**. Unzip it and open `index.html` (web version) or `app.html` (app version) in your browser. An internet connection is still needed the first time, because names and pictures are loaded from PokeAPI.
 
 ## Your data
 
@@ -36,11 +36,11 @@ Your progress is saved only in your own browser on your own device. It is not up
 | File | What it does |
 | --- | --- |
 | `index.html` | The web version |
+| `app.html` | The app version |
+| `app.webmanifest` | Lets browsers install the app version |
+| `app-sw.js` | Offline support for the app version |
+| `icon-*.png`, `apple-touch-icon.png` | App icons |
 | `og-image.png` | Preview picture shown when a link is shared |
-| `app/index.html` | The app version |
-| `app/manifest.webmanifest` | Lets browsers install the app |
-| `app/sw.js` | Offline support for the app |
-| `app/*.png` | App icons |
 
 ## Credits and disclaimer
 
