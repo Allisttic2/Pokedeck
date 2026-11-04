@@ -113,7 +113,7 @@ dialog button{margin-top:14px;padding:9px 20px;border:0;border-radius:999px;back
 <p>Pokedeck is a free tracker for your Pokémon collection. Pick a game, tap a Pokémon to mark it as caught, and tap the star on a card to mark it as shiny.</p>
 <h3>How it works</h3>
 <ul>
-<li>Every game has its own list, in that game's regional Pokédex order. The "All Pokémon (National)" view combines everything you have caught in any game.</li>
+<li>Every game has its own list, in that game's regional Pokédex order. The "All Pokémon (National)" view combines everything you have caught in any game. Regional forms (Alolan, Galarian, Hisuian, Paldean) are listed in the games where they appear, and at the end of the National list.</li>
 <li>Pokémon that cannot be shiny in a game have no shiny star.</li>
 <li>Your progress is saved only in this browser on this device. It is not uploaded anywhere, and clearing your browser data will erase it.</li>
 <li>Want it on your home screen? Open the <a href="app.html" target="_blank" rel="noopener">app version</a>, which can be installed and works offline.</li>
@@ -189,6 +189,7 @@ const SHINY_LOCK={
 let names=[],list=[],filter="alla",store={};
 try{store=JSON.parse(localStorage.getItem("dex")||"{}")}catch(e){}
 const save=()=>{try{localStorage.setItem("dex",JSON.stringify(store))}catch(e){}};
+if(store.forms){store[0]=store[0]||{};for(const k in store.forms)if(!store[0][k])store[0][k]=store.forms[k];delete store.forms;save()}
 GAMES.forEach((g,i)=>$("game").add(new Option(g[0],i)));
 [["alla","All"],["fangad","Caught"],["saknas","Missing"],["shiny","Shiny"]].forEach(([k,t])=>{
  const b=document.createElement("button");b.textContent=t;b.dataset.k=k;
@@ -222,7 +223,7 @@ async function loadNames(){
  cset("names2",n);
  return n;
 }
-async function loadDex(gi){
+async function loadDexRaw(gi){
  const slugs=GAMES[gi][1];
  if(slugs[0]==="national")return names.map((_,i)=>i+1);
  const key="dex3_"+slugs.join("+");
@@ -246,8 +247,13 @@ function formLabel(id){const m=formMeta[id];if(!m)return"?";
  if(MRE.test(m)){const base=m.replace(MRE,""),ex=(MRE.exec(m)[0].replace(/^-mega-?/,""));
   return "Mega "+base.replace(/-/g," ")+(ex?" "+(ex.length===1?ex.toUpperCase():ex):"")}
  const r=FRE.exec(m);
+ if(!r)return m.replace(/-/g," ");
  return ADJ[r[2]]+" "+r[1].replace(/-/g," ")+(r[3]?" ("+r[3].replace(/-/g," ")+")":"")}
-const formBase=id=>{const m=formMeta[id];if(!m)return 0;return names.indexOf(m.replace(new RegExp("-("+Object.keys(ADJ).join("|")+"|mega)(-.*)?$"),"").replace(/-/g," "))+1};
+const formBase=id=>{const m=formMeta[id];if(!m)return 0;
+ const b=names.indexOf(m.replace(new RegExp("-("+Object.keys(ADJ).join("|")+"|mega)(-.*)?$"),"").replace(/-/g," "))+1;
+ if(b)return b;
+ let best=0,len=0;names.forEach((n,k)=>{const sl=n.replace(/ /g,"-");if((m===sl||m.startsWith(sl+"-"))&&sl.length>len){best=k+1;len=sl.length}});
+ return best};
 let allForms=null,megaIds=[];
 async function loadAllForms(){
  if(allForms)return allForms;
@@ -258,7 +264,7 @@ async function loadAllForms(){
   raw=d.results.map(r=>[+r.url.split("/").filter(Boolean).pop(),r.name]);
   cset(key,raw);
  }
- raw.forEach(([id,n])=>formMeta[id]=n);
+ raw.forEach(([id,n])=>{formMeta[id]=n;FN[n]=id;const r=FRE.exec(n);if(r&&!/totem|zen/.test(n))(FB[r[1]+"|"+r[2]]=FB[r[1]+"|"+r[2]]||[]).push(id)});
  return allForms=raw;
 }
 const byBase=(a,b)=>(formBase(a)-formBase(b))||(a-b);
@@ -271,6 +277,36 @@ async function ensureMegas(){
  if(megaIds.length)return;
  const raw=await loadAllForms();
  megaIds=raw.filter(([id,n])=>MRE.test(n)).map(r=>r[0]).sort(byBase);
+}
+// Regional forms that appear in a game's Pokédex. mode "replace" = the form is shown instead of the normal Pokémon,
+// "add" = both are listed. Key = game's position in GAMES. Add new games/forms here.
+const ALOLA=[19,20,26,27,28,37,38,50,51,52,53,74,75,76,88,89,103,105];
+const REGIONAL={
+ 12:{s:"alola",ids:ALOLA,mode:"replace"},
+ 14:{s:"galar",ids:[52,77,78,79,80,83,110,122,144,145,146,199,222,263,264,554,555,562,618],mode:"replace"},
+ 16:{s:"hisui",ids:[58,59,100,101,157,211,215,503,549,570,571,628,705,706,713,724],mode:"replace",custom:{550:["basculin-white-striped"]}},
+ 17:{s:"paldea",ids:[128,194],mode:"add"} // Paldean form in the base game, standard form in the DLC (Kitakami)
+};
+let FB={},FN={};
+function withForms(l,conf){
+ const out=[];
+ l.forEach(id=>{
+  const slug=(names[id-1]||"").replace(/ /g,"-");
+  const f=conf.ids.includes(id)?(FB[slug+"|"+conf.s]||[]):((conf.custom&&conf.custom[id]||[]).map(n=>FN[n]).filter(Boolean));
+  if(!f.length){out.push(id);return}
+  if(conf.mode==="add")out.push(id);
+  out.push(...f);
+ });
+ return out;
+}
+async function loadDex(gi){
+ const l=await loadDexRaw(gi);
+ try{
+  await loadAllForms();
+  if(gi==="0"){await ensureForms();return l.concat(formIds)}
+  const conf=REGIONAL[gi];
+  return conf?withForms(l,conf):l;
+ }catch(e){return l}
 }
 async function selectGame(){
  if(view!=="dex"){
@@ -297,7 +333,7 @@ function render(){
  let n=0,ns=0,h="";
  const national=!forms&&GAMES[gi][1][0]==="national",lock=forms?null:SHINY_LOCK[gi];
  for(const [idx,id] of list.entries()){
-  const name=forms?formLabel(id):(names[id-1]||"?"),has=!!got[id],locked=mega||lock==="all"||SHINY_GLOBAL.includes(id)||(Array.isArray(lock)&&lock.includes(id)),sh=got[id]===2&&!locked,num=String(idx+1);
+  const name=id>10000?formLabel(id):(names[id-1]||"?"),has=!!got[id],locked=mega||lock==="all"||SHINY_GLOBAL.includes(id)||(Array.isArray(lock)&&lock.includes(id)),sh=got[id]===2&&!locked,num=String(idx+1);
   if(has)n++;
   if(sh)ns++;
   if(filter==="fangad"&&!has)continue;
@@ -305,7 +341,8 @@ function render(){
   if(filter==="shiny"&&!sh)continue;
   if(tf&&!(types[id]||[]).includes(tf))continue;
   if(q&&!(name.toLowerCase().includes(q)||(types[id]||[]).some(t=>t&&t.includes(q))||num===q.replace(/^0+/,"")||String(id)===q.replace(/^0+/,"")))continue;
-  const label=forms?pad(formBase(id)):national?pad(id):"#"+num.padStart(3,"0")+" · N"+id;
+  const base=id>10000?formBase(id):id;
+  const label=mega||national?pad(base):"#"+num.padStart(3,"0")+" · N"+base;
   h+=`<div class="c${has?" got":""}${sh?" shiny":""}" data-n="${id}" style="--g:${col(id,0)};--g2:${col(id,1)}"><i class="tp"></i><button class="inf" title="Pokédex entry" aria-label="Open Pokédex entry">i</button>${locked?"":`<button class="sh" title="Shiny" aria-label="Mark as shiny">${STAR}</button>`}<img loading="lazy" alt="" src="${sh?SPRS(id):SPR(id)}" data-sh="${sh?1:0}" onerror="imgFall(this,${id})"><b>${label}</b><span>${name}</span><div class="tys">${(types[id]||[]).filter(Boolean).map(t=>`<em class="ty${LIGHT.includes(t)?" lt":""}" style="background:${TC[t]}">${t}</em>`).join("")}</div></div>`;
  }
  $("grid").innerHTML=h;
@@ -363,7 +400,7 @@ if("serviceWorker" in navigator)navigator.serviceWorker.getRegistrations().then(
 $("aboutBtn").onclick=()=>$("about").showModal();
 $("aboutClose").onclick=()=>$("about").close();
 $("about").onclick=e=>{if(e.target===$("about"))$("about").close()};
-[["dex","Pokédex"],["forms","Regional forms"],["mega","Mega evolutions"]].forEach(([k,t])=>{
+[["dex","Pokédex"],["mega","Mega evolutions"]].forEach(([k,t])=>{
  const b=document.createElement("button");b.textContent=t;b.dataset.k=k;
  b.onclick=()=>{view=k;$("game").style.display=k==="dex"?"":"none";selectGame()};$("views").append(b)});
 Object.keys(TC).forEach(t=>$("typeSel").add(new Option(t[0].toUpperCase()+t.slice(1),t)));
