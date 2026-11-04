@@ -86,6 +86,8 @@ dialog button{margin-top:14px;padding:9px 20px;border:0;border-radius:999px;back
 .dx-meta{display:flex;gap:16px;flex-wrap:wrap;margin:8px 0;font-size:14px}
 .st{display:grid;grid-template-columns:34px 30px 1fr;gap:6px;align-items:center;font-size:12px;margin:3px 0}
 .st i{display:block;height:8px;border-radius:4px;background:var(--g)}
+.sr{display:flex;gap:8px}
+#typeSel{width:auto;flex:0 0 140px;border:2px solid var(--bd);text-transform:capitalize}
 #msg{padding:16px;color:var(--mut)}
 .g1{--g:#e63946}.g2{--g:#e0a526}.g3{--g:#2a9d8f}.g4{--g:#4361ee}.g5{--g:#6c757d}.g6{--g:#e56b9e}.g7{--g:#f77f00}.g8{--g:#7b2cbf}.g9{--g:#c1121f}
 </style>
@@ -101,7 +103,7 @@ dialog button{margin-top:14px;padding:9px 20px;border:0;border-radius:999px;back
 <div class="wrap">
 <div class="tabs" id="views"></div>
 <div class="tabs" id="tabs" style="padding-top:0"></div>
-<div class="s"><input id="q" placeholder="Search by name or number…"></div>
+<div class="s sr"><input id="q" placeholder="Search name, number or type…"><select id="typeSel" aria-label="Filter by type"><option value="">All types</option></select></div>
 <div id="msg">Loading Pokémon…</div>
 <div id="grid"></div>
 </div>
@@ -287,7 +289,7 @@ function render(){
  const forms=view!=="dex",mega=view==="mega",gi=forms?view:$("game").value;store[gi]=store[gi]||{};
  let got=store[gi];
  if(gi==="0"){got={};for(const k in store)if(k!=="forms"&&k!=="mega")for(const id in store[k])got[id]=Math.max(got[id]||0,store[k][id])} // national = union of all games
- const q=$("q").value.trim().toLowerCase().replace(/^#/,"");
+ const q=$("q").value.trim().toLowerCase().replace(/^#/,""),tf=$("typeSel").value;
  [...$("views").children].forEach(b=>b.classList.toggle("on",b.dataset.k===view));
  [...$("tabs").children].forEach(b=>b.classList.toggle("on",b.dataset.k===filter));
  const tb=$("tabs").children;tb[1].textContent=mega?"Owned":"Caught";tb[3].style.display=mega?"none":"";
@@ -301,7 +303,8 @@ function render(){
   if(filter==="fangad"&&!has)continue;
   if(filter==="saknas"&&has)continue;
   if(filter==="shiny"&&!sh)continue;
-  if(q&&!(name.toLowerCase().includes(q)||num===q.replace(/^0+/,"")||String(id)===q.replace(/^0+/,"")))continue;
+  if(tf&&!(types[id]||[]).includes(tf))continue;
+  if(q&&!(name.toLowerCase().includes(q)||(types[id]||[]).some(t=>t&&t.includes(q))||num===q.replace(/^0+/,"")||String(id)===q.replace(/^0+/,"")))continue;
   const label=forms?pad(formBase(id)):national?pad(id):"#"+num.padStart(3,"0")+" · N"+id;
   h+=`<div class="c${has?" got":""}${sh?" shiny":""}" data-n="${id}" style="--g:${col(id,0)};--g2:${col(id,1)}"><i class="tp"></i><button class="inf" title="Pokédex entry" aria-label="Open Pokédex entry">i</button>${locked?"":`<button class="sh" title="Shiny" aria-label="Mark as shiny">${STAR}</button>`}<img loading="lazy" alt="" src="${sh?SPRS(id):SPR(id)}" data-sh="${sh?1:0}" onerror="imgFall(this,${id})"><b>${label}</b><span>${name}</span><div class="tys">${(types[id]||[]).filter(Boolean).map(t=>`<em class="ty${LIGHT.includes(t)?" lt":""}" style="background:${TC[t]}">${t}</em>`).join("")}</div></div>`;
  }
@@ -363,6 +366,8 @@ $("about").onclick=e=>{if(e.target===$("about"))$("about").close()};
 [["dex","Pokédex"],["forms","Regional forms"],["mega","Mega evolutions"]].forEach(([k,t])=>{
  const b=document.createElement("button");b.textContent=t;b.dataset.k=k;
  b.onclick=()=>{view=k;$("game").style.display=k==="dex"?"":"none";selectGame()};$("views").append(b)});
+Object.keys(TC).forEach(t=>$("typeSel").add(new Option(t[0].toUpperCase()+t.slice(1),t)));
+$("typeSel").onchange=render;
 $("game").onchange=selectGame;$("q").oninput=render;
 loadTypes().then(t=>{types=t;render()}).catch(()=>{});
 loadNames().then(n=>{names=n;selectGame()}).catch(()=>{$("msg").textContent="Could not reach PokeAPI. Check your internet connection."});
