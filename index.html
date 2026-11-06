@@ -561,6 +561,41 @@ dialog button {
   padding: 16px;
   color: var(--mut);
 }
+
+/* ===== Footer ===== */
+footer {
+  margin-top: 8px;
+  padding: 24px 16px calc(32px + env(safe-area-inset-bottom, 0px));
+  border-top: 2px solid var(--bd);
+  background: var(--card);
+  color: var(--mut);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+footer .wrap > * {
+  margin: 0 0 10px;
+}
+
+footer strong {
+  color: var(--ink);
+  font-family: var(--font-head);
+  font-size: 15px;
+}
+
+footer a {
+  color: var(--red);
+}
+
+footer button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--red);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
 </style>
 </head>
 <body>
@@ -582,6 +617,13 @@ dialog button {
 <div id="msg">Loading Pokémon…</div>
 <div id="grid"></div>
 </div>
+<footer>
+<div class="wrap">
+<p><strong>Pokedeck</strong> is a free Pokédex tracker. Pick a game, tap a Pokémon to mark it as caught, and tap the star to mark it as shiny. Your progress is saved only in this browser on this device. There are no accounts, ads or analytics. <button id="footAbout" type="button">More about Pokedeck</button></p>
+<p>Data and pictures come from <a href="https://pokeapi.co" target="_blank" rel="noopener">PokeAPI</a>. Shiny-lock information is based on <a href="https://www.serebii.net/games/shiny.shtml" target="_blank" rel="noopener">Serebii.net</a> and may be out of date.</p>
+<p><strong>Disclaimer:</strong> this is an unofficial fan project. It is not affiliated with, endorsed by or sponsored by Nintendo, Game Freak, Creatures Inc. or The Pokémon Company. Pokémon and all related names and images are trademarks and copyrights of their respective owners.</p>
+</div>
+</footer>
 <dialog id="dex"><div id="dexBody"></div><button id="dexClose" type="button">Close</button></dialog>
 <dialog id="about">
 <h2>About Pokedeck</h2>
@@ -1035,6 +1077,7 @@ if("serviceWorker" in navigator)navigator.serviceWorker.getRegistrations().then(
   if(!r.scope.endsWith("app.html"))r.unregister()
 })).catch(()=>{});
 $("aboutBtn").onclick=()=>$("about").showModal();
+$("footAbout").onclick=()=>$("about").showModal();
 $("aboutClose").onclick=()=>$("about").close();
 $("about").onclick=e=>{
   if(e.target===$("about"))$("about").close()
