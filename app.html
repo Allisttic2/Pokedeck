@@ -3,6 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script>
+// Pick light or dark mode before the page is drawn: saved choice first, otherwise the device setting.
+var t=null;
+try{t=localStorage.getItem("theme")}catch(e){}
+if(t!=="light"&&t!=="dark")t=window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";
+document.documentElement.dataset.theme=t;
+</script>
 <title>Pokedeck App</title>
 <meta name="description" content="Track every Pokémon you catch across all the games, including shinies, regional forms and Mega Stones.">
 <meta property="og:type" content="website">
@@ -28,6 +35,7 @@
 <style>
 /* ===== Theme colours and fonts ===== */
 :root {
+  color-scheme: light;
   --font-head: Fredoka,ui-rounded,system-ui,-apple-system,"Segoe UI",sans-serif;
   --font-body: Nunito,system-ui,-apple-system,"Segoe UI",sans-serif;
   --bg: #f3efe8;
@@ -42,15 +50,27 @@
   --sh: 0 2px 8px rgba(30,20,10,.08);
 }
 
-@media (prefers-color-scheme:dark) {
-  :root {
-    --bg: #14151a;
-    --card: #212329;
-    --ink: #f1f1f4;
-    --mut: #9b9ca6;
-    --bd: #34363e;
-    --sh: 0 2px 8px rgba(0,0,0,.4);
-  }
+/* Dark mode (the look the page had before): white text on dark backgrounds */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #14151a;
+  --card: #212329;
+  --ink: #f1f1f4;
+  --mut: #9b9ca6;
+  --bd: #34363e;
+  --sh: 0 2px 8px rgba(0,0,0,.4);
+}
+
+.about.icon .ico-sun {
+  display: none;
+}
+
+:root[data-theme="dark"] .about.icon .ico-sun {
+  display: block;
+}
+
+:root[data-theme="dark"] .about.icon .ico-moon {
+  display: none;
 }
 
 /* ===== Page basics ===== */
@@ -691,6 +711,7 @@ footer button {
 <h1><svg class="logo" viewBox="0 0 100 100" aria-hidden="true"><rect x='3' y='3' width='94' height='94' rx='24' fill='#e63946' stroke='#1d1d22' stroke-width='5'/><g stroke-linecap='round' stroke-linejoin='round' fill='none'><g transform='rotate(-7 30 50)'><path d='M20 74V26h9a11 11 0 0 1 0 22H20' stroke='#1d1d22' stroke-width='25'/></g><g transform='translate(0 2) rotate(6 66 50)'><path d='M56 26h4a18 24 0 0 1 0 48h-4z' stroke='#1d1d22' stroke-width='25'/></g><g transform='rotate(-7 30 50)'><path d='M20 74V26h9a11 11 0 0 1 0 22H20' stroke='#ffd23f' stroke-width='13'/><path d='M18 33V43' stroke='#ffffff' opacity='.85' stroke-width='3.5'/></g><g transform='translate(0 2) rotate(6 66 50)'><path d='M56 26h4a18 24 0 0 1 0 48h-4z' stroke='#ffd23f' stroke-width='13'/><path d='M54 35V45' stroke='#ffffff' stroke-width='3.5' opacity='.85'/></g></g><path d='M86 5l2.2 6.8L95 14l-6.8 2.2L86 23l-2.2-6.8L77 14l6.8-2.2z' fill='#ffffff' stroke='#1d1d22' stroke-width='2.5' stroke-linejoin='round'/></svg>Pokedeck <span class="appbadge">APP</span></h1>
 <div class="hbtns">
 <button id="installBtn" class="about" type="button" style="display:none">Install app</button>
+<button id="themeBtn" class="about icon" type="button" aria-label="Switch between light and dark mode" title="Light / dark mode"><svg class="ico-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z" fill="currentColor"/></svg><svg class="ico-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="currentColor"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
 <button id="updBtn" class="about icon" type="button" aria-label="What's new" title="What's new" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a6 6 0 0 0-6 6v3.5L4 16v1h16v-1l-2-3.5V9a6 6 0 0 0-6-6zm-2 16a2 2 0 0 0 4 0z" fill="currentColor"/></svg><span id="updDot" class="dot" hidden></span></button>
 <button id="aboutBtn" class="about" type="button">About</button>
 </div>
@@ -1193,6 +1214,14 @@ $("installBtn").onclick=async()=>{
   $("installBtn").style.display="none"
 };
 if("serviceWorker" in navigator&&location.protocol.startsWith("http"))addEventListener("load",()=>navigator.serviceWorker.register("app-sw.js",{scope:"app.html"}).catch(()=>{}));
+// ===== Light / dark mode =====
+const THEME_KEY="theme";
+$("themeBtn").onclick=()=>{
+  const root=document.documentElement;
+  const next=root.dataset.theme==="dark"?"light":"dark";
+  root.dataset.theme=next;
+  try{localStorage.setItem(THEME_KEY,next)}catch(e){}
+};
 $("aboutBtn").onclick=()=>$("about").showModal();
 $("footAbout").onclick=()=>$("about").showModal();
 $("aboutClose").onclick=()=>$("about").close();
