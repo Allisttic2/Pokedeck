@@ -636,9 +636,9 @@ dialog button {
 footer {
   margin-top: 8px;
   padding: 24px 16px calc(32px + env(safe-area-inset-bottom, 0px));
-  border-top: 2px solid var(--bd);
-  background: var(--card);
-  color: var(--mut);
+  border-top: 6px solid #1d1d22;
+  background: linear-gradient(135deg, var(--red), var(--red2));
+  color: rgba(255,255,255,.92);
   font-size: 13px;
   line-height: 1.5;
 }
@@ -648,21 +648,23 @@ footer .wrap > * {
 }
 
 footer strong {
-  color: var(--ink);
+  color: #fff;
   font-family: var(--font-head);
   font-size: 15px;
 }
 
 footer a {
-  color: var(--red);
+  color: #fff;
+  font-weight: 700;
 }
 
 footer button {
   padding: 0;
   border: 0;
   background: none;
-  color: var(--red);
+  color: #fff;
   font: inherit;
+  font-weight: 700;
   text-decoration: underline;
   cursor: pointer;
 }
