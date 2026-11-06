@@ -298,9 +298,6 @@ select:focus,input:focus {
 }
 
 .about {
-  position: absolute;
-  top: 0;
-  right: 0;
   padding: 6px 14px;
   border: 2px solid #fff8;
   border-radius: 999px;
@@ -324,8 +321,81 @@ select:focus,input:focus {
   border-radius: 999px;
 }
 
-.about.inst {
-  right: 84px;
+.sec {
+  grid-column: 1 / -1;
+  margin: 14px 0 0;
+  padding-top: 14px;
+  border-top: 2px dashed var(--bd);
+  font: 600 18px var(--font-head);
+}
+
+.sec small {
+  display: block;
+  color: var(--mut);
+  font: 600 13px var(--font-body);
+}
+
+/* ===== Header buttons and creator updates ===== */
+.hbtns {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.about.icon {
+  position: relative;
+  padding: 6px 10px;
+}
+
+.about.icon svg {
+  display: block;
+  width: 18px;
+  height: 18px;
+}
+
+.dot {
+  position: absolute;
+  top: 0;
+  right: 2px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: #ffd23f;
+  border: 2px solid #1d1d22;
+}
+
+.upd-item {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--bd);
+}
+
+.upd-item:last-of-type {
+  border-bottom: 0;
+}
+
+.upd-date {
+  color: var(--mut);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.upd-item h3 {
+  margin: 2px 0 4px;
+}
+
+.upd-item p {
+  margin: 0;
+}
+
+@media (max-width:520px) {
+  .hbtns {
+    position: static;
+    justify-content: flex-end;
+    margin-bottom: 10px;
+  }
 }
 
 /* ===== Pop-up windows (About and Pokédex entry) ===== */
@@ -617,8 +687,11 @@ footer button {
 <body>
 <header><div class="wrap">
 <h1><svg class="logo" viewBox="0 0 100 100" aria-hidden="true"><rect x='3' y='3' width='94' height='94' rx='24' fill='#e63946' stroke='#1d1d22' stroke-width='5'/><g stroke-linecap='round' stroke-linejoin='round' fill='none'><g transform='rotate(-7 30 50)'><path d='M20 74V26h9a11 11 0 0 1 0 22H20' stroke='#1d1d22' stroke-width='25'/></g><g transform='translate(0 2) rotate(6 66 50)'><path d='M56 26h4a18 24 0 0 1 0 48h-4z' stroke='#1d1d22' stroke-width='25'/></g><g transform='rotate(-7 30 50)'><path d='M20 74V26h9a11 11 0 0 1 0 22H20' stroke='#ffd23f' stroke-width='13'/><path d='M18 33V43' stroke='#ffffff' opacity='.85' stroke-width='3.5'/></g><g transform='translate(0 2) rotate(6 66 50)'><path d='M56 26h4a18 24 0 0 1 0 48h-4z' stroke='#ffd23f' stroke-width='13'/><path d='M54 35V45' stroke='#ffffff' stroke-width='3.5' opacity='.85'/></g></g><path d='M86 5l2.2 6.8L95 14l-6.8 2.2L86 23l-2.2-6.8L77 14l6.8-2.2z' fill='#ffffff' stroke='#1d1d22' stroke-width='2.5' stroke-linejoin='round'/></svg>Pokedeck <span class="appbadge">APP</span></h1>
-<button id="installBtn" class="about inst" type="button" style="display:none">Install app</button>
+<div class="hbtns">
+<button id="installBtn" class="about" type="button" style="display:none">Install app</button>
+<button id="updBtn" class="about icon" type="button" aria-label="What's new" title="What's new" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a6 6 0 0 0-6 6v3.5L4 16v1h16v-1l-2-3.5V9a6 6 0 0 0-6-6zm-2 16a2 2 0 0 0 4 0z" fill="currentColor"/></svg><span id="updDot" class="dot" hidden></span></button>
 <button id="aboutBtn" class="about" type="button">About</button>
+</div>
 <select id="game" aria-label="Game"></select>
 <div class="bar"><i id="fill"></i></div>
 <div id="stat"></div>
@@ -642,6 +715,11 @@ footer button {
 </div>
 </footer>
 <dialog id="dex"><div id="dexBody"></div><button id="dexClose" type="button">Close</button></dialog>
+<dialog id="updates">
+<h2>What's new</h2>
+<div id="updList"></div>
+<button id="updClose" type="button">Close</button>
+</dialog>
 <dialog id="about">
 <h2>About Pokedeck</h2>
 <p>Pokedeck is a free tracker for your Pokémon collection. Pick a game, tap a Pokémon to mark it as caught, and tap the star on a card to mark it as shiny.</p>
@@ -981,7 +1059,7 @@ function render(){
   tb[1].textContent=mega?"Owned":"Caught";
   tb[3].style.display=mega?"none":"";
   if(mega&&filter==="shiny")filter="all";
-  let n=0,ns=0,h="";
+  let n=0,ns=0,h="",formsHeading=false;
   const national=!forms&&GAMES[gi][1][0]==="national",lock=forms?null:SHINY_LOCK[gi];
   for(const [idx,id] of list.entries()){
     const name=id>10000?formLabel(id):(names[id-1]||"?");
@@ -1003,6 +1081,11 @@ function render(){
     if(q&&!matches)continue;
     const base=id>10000?formBase(id):id;
     const label=mega||national?pad(base):"#"+num.padStart(3,"0")+" · N"+base;
+    // In the National list, regional forms come last, under their own heading
+    if(national&&id>10000&&!formsHeading){
+      h+='<h3 class="sec">Regional forms<small>Alolan, Galarian, Hisuian and Paldean versions</small></h3>';
+      formsHeading=true;
+    }
     const shinyBtn=locked?"":`<button class="sh" title="Shiny" aria-label="Mark as shiny">${STAR}</button>`;
     const pills=(types[id]||[]).filter(Boolean).map(typePill).join("");
     h+=`<div class="c${has?" got":""}${sh?" shiny":""}" data-n="${id}" style="--g:${col(id,0)};--g2:${col(id,1)}">
@@ -1164,6 +1247,40 @@ $("typeClear").onclick=()=>{
 };
 $("game").onchange=selectGame;
 $("q").oninput=render;
+// ===== Updates from the creator (read from updates.json, which only the repo owner can edit) =====
+const UPDATES_URL="https://allisttic2.github.io/Pokedeck/updates.json";
+const SEEN_KEY="seenUpdate";
+let updates=[];
+const updateId=u=>String(u.id||u.date||"");
+async function loadUpdates(){
+  for(const url of ["updates.json",UPDATES_URL]){
+    try{
+      const r=await fetch(url,{cache:"no-cache"});
+      if(!r.ok)continue;
+      const d=await r.json();
+      if(Array.isArray(d)){updates=d;break}
+    }catch(e){}
+  }
+  if(!updates.length)return;
+  let seen="";
+  try{seen=localStorage.getItem(SEEN_KEY)||""}catch(e){}
+  $("updBtn").hidden=false;
+  $("updDot").hidden=updateId(updates[0])===seen;
+}
+function showUpdates(){
+  $("updList").innerHTML=updates.map(u=>`<div class="upd-item">
+    <div class="upd-date">${esc(u.date||"")}</div>
+    <h3>${esc(u.title||"")}</h3>
+    <p>${esc(u.text||"").replace(/\n/g,"<br>")}</p>
+  </div>`).join("")||"<p>No updates yet.</p>";
+  $("updates").showModal();
+  try{localStorage.setItem(SEEN_KEY,updateId(updates[0]))}catch(e){}
+  $("updDot").hidden=true;
+}
+$("updBtn").onclick=showUpdates;
+$("updClose").onclick=()=>$("updates").close();
+$("updates").onclick=e=>{if(e.target===$("updates"))$("updates").close()};
+loadUpdates();
 loadTypes().then(t=>{
   types=t;
   render()
