@@ -583,6 +583,38 @@ dialog button {
   gap: 8px;
 }
 
+.qwrap {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.qwrap input {
+  padding-right: 42px;
+}
+
+#qClear {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  transform: translateY(-50%);
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--bd);
+  color: var(--ink);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+#qClear:hover {
+  background: var(--red);
+  color: #fff;
+}
+
 #typeBtn,
 #natBtn {
   flex: 0 0 auto;
@@ -729,7 +761,7 @@ footer button {
 <div class="wrap">
 <div class="tabs" id="views"></div>
 <div class="tabs" id="tabs" style="padding-top:0"></div>
-<div class="s sr"><input id="q" placeholder="Search name, number or type…"><button id="typeBtn" type="button" aria-expanded="false">Types</button><button id="natBtn" type="button" hidden>Sources</button></div>
+<div class="s sr"><div class="qwrap"><input id="q" placeholder="Search name, number or type…"><button id="qClear" type="button" aria-label="Clear search" hidden>×</button></div><button id="typeBtn" type="button" aria-expanded="false">Types</button><button id="natBtn" type="button" hidden>Sources</button></div>
 <div class="s" id="typeChips" hidden>
 <div id="chipList"></div>
 <div class="chipctl"><button id="typeMode" type="button">Match: any</button><button id="typeClear" type="button">Clear</button></div>
@@ -1365,7 +1397,24 @@ $("typeClear").onclick=()=>{
   render();
 };
 $("game").onchange=selectGame;
-$("q").oninput=render;
+// Search box: the x button clears it (so does Escape)
+function updateClearBtn(){
+  $("qClear").hidden=!$("q").value;
+}
+function clearSearch(){
+  $("q").value="";
+  updateClearBtn();
+  render();
+}
+$("q").oninput=()=>{
+  updateClearBtn();
+  render();
+};
+$("q").onkeydown=e=>{if(e.key==="Escape"&&$("q").value)clearSearch()};
+$("qClear").onclick=()=>{
+  clearSearch();
+  $("q").focus();
+};
 // ===== Updates from the creator (read from updates.json, which only the repo owner can edit) =====
 const UPDATES_URL="https://allisttic2.github.io/Pokedeck/updates.json";
 const SEEN_KEY="seenUpdate";
