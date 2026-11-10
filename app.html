@@ -599,7 +599,8 @@ dialog button {
   gap: 8px;
 }
 
-#typeBtn {
+#typeBtn,
+#natBtn {
   flex: 0 0 auto;
   padding: 11px 16px;
   border: 2px solid var(--bd);
@@ -611,10 +612,33 @@ dialog button {
   box-shadow: var(--sh);
 }
 
-#typeBtn.on {
+#typeBtn.on,
+#natBtn.on {
   border-color: var(--red);
   color: var(--red);
   font-weight: 700;
+}
+
+.srcrow {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 6px 0;
+  cursor: pointer;
+}
+
+.srcrow input {
+  width: auto;
+  padding: 0;
+  border: 0;
+  box-shadow: none;
+  accent-color: var(--red);
+}
+
+#natList {
+  max-height: 45vh;
+  margin-top: 8px;
+  overflow: auto;
 }
 
 #typeChips {
@@ -722,7 +746,7 @@ footer button {
 <div class="wrap">
 <div class="tabs" id="views"></div>
 <div class="tabs" id="tabs" style="padding-top:0"></div>
-<div class="s sr"><input id="q" placeholder="Search name, number or type…"><button id="typeBtn" type="button" aria-expanded="false">Types</button></div>
+<div class="s sr"><input id="q" placeholder="Search name, number or type…"><button id="typeBtn" type="button" aria-expanded="false">Types</button><button id="natBtn" type="button" hidden>Sources</button></div>
 <div class="s" id="typeChips" hidden>
 <div id="chipList"></div>
 <div class="chipctl"><button id="typeMode" type="button">Match: any</button><button id="typeClear" type="button">Clear</button></div>
@@ -742,6 +766,13 @@ footer button {
 <h2>What's new</h2>
 <div id="updList"></div>
 <button id="updClose" type="button">Close</button>
+</dialog>
+<dialog id="natDlg">
+<h2>National list sources</h2>
+<p>Choose which games add their caught Pokémon to the National list. Anything you mark directly in the National list always counts.</p>
+<div class="chipctl"><button id="natAll" type="button">All games</button><button id="natNone" type="button">No games</button></div>
+<div id="natList"></div>
+<button id="natClose" type="button">Close</button>
 </dialog>
 <dialog id="about">
 <h2>About Pokedeck</h2>
@@ -830,6 +861,11 @@ const SHINY_LOCK={
 };
 // ===== Saved progress and app state =====
 let names=[],list=[],filter="all",store={};
+// Games left out of the National list (the user can change this with the Sources button)
+let natOff=new Set();
+try{
+  natOff=new Set(JSON.parse(localStorage.getItem("natOff")||"[]").map(String))
+}catch(e){}
 try{
   store=JSON.parse(localStorage.getItem("dex")||"{}")
 }catch(e){}
@@ -1072,7 +1108,7 @@ function render(){
   // The National list shows everything caught in any game.
   if(gi==="0"){
     got={};
-    for(const k in store)if(k!=="forms"&&k!=="mega")for(const id in store[k])got[id]=Math.max(got[id]||0,store[k][id])
+    for(const k in store)if(k!=="forms"&&k!=="mega"&&!natOff.has(k))for(const id in store[k])got[id]=Math.max(got[id]||0,store[k][id])
   }
   const q=$("q").value.trim().toLowerCase().replace(/^#/,"");
   const qNum=q.replace(/^0+/,"");
@@ -1084,6 +1120,7 @@ function render(){
   if(mega&&filter==="shiny")filter="all";
   let n=0,ns=0,h="",formsHeading=false;
   const national=!forms&&GAMES[gi][1][0]==="national",lock=forms?null:SHINY_LOCK[gi];
+  $("natBtn").hidden=!national;
   for(const [idx,id] of list.entries()){
     const name=id>10000?formLabel(id):(names[id-1]||"?");
     const has=!!got[id];
@@ -1180,7 +1217,7 @@ $("grid").onclick=e=>{
   }
   const gi=view!=="dex"?view:$("game").value,n=c.dataset.n,g=store[gi];
   if(gi==="0"&&!e.target.closest(".sh")){
-    const from=GAMES.map((_,i)=>i).filter(i=>i&&store[i]&&store[i][n]);
+    const from=GAMES.map((_,i)=>i).filter(i=>i&&!natOff.has(String(i))&&store[i]&&store[i][n]);
     if(from.length){
       const m=$("msg");
       m.textContent="Caught in "+GAMES[from[0]][0]+" – change it in that game.";
@@ -1222,6 +1259,38 @@ $("themeBtn").onclick=()=>{
   root.dataset.theme=next;
   try{localStorage.setItem(THEME_KEY,next)}catch(e){}
 };
+// ===== Which games count towards the National list =====
+function saveNatOff(){
+  try{localStorage.setItem("natOff",JSON.stringify([...natOff]))}catch(e){}
+}
+function updateNatBtn(){
+  $("natBtn").textContent=natOff.size?`Sources (${natOff.size} off)`:"Sources";
+  $("natBtn").classList.toggle("on",natOff.size>0);
+}
+function buildNatList(){
+  $("natList").innerHTML=GAMES.map((g,i)=>i?`<label class="srcrow"><input type="checkbox" data-g="${i}"${natOff.has(String(i))?"":" checked"}> ${esc(g[0])}</label>`:"").join("");
+}
+function setAllNatSources(on){
+  natOff.clear();
+  if(!on)GAMES.forEach((g,i)=>{if(i)natOff.add(String(i))});
+  saveNatOff();
+  buildNatList();
+  updateNatBtn();
+  render();
+}
+$("natBtn").onclick=()=>{buildNatList();$("natDlg").showModal()};
+$("natList").onchange=e=>{
+  const g=e.target.dataset.g;
+  if(e.target.checked)natOff.delete(g);else natOff.add(g);
+  saveNatOff();
+  updateNatBtn();
+  render();
+};
+$("natAll").onclick=()=>setAllNatSources(true);
+$("natNone").onclick=()=>setAllNatSources(false);
+$("natClose").onclick=()=>$("natDlg").close();
+$("natDlg").onclick=e=>{if(e.target===$("natDlg"))$("natDlg").close()};
+updateNatBtn();
 $("aboutBtn").onclick=()=>$("about").showModal();
 $("footAbout").onclick=()=>$("about").showModal();
 $("aboutClose").onclick=()=>$("about").close();
