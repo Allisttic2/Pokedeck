@@ -860,7 +860,7 @@ const SHINY_LOCK={
   18: [150,382,383,384,485,491,647,648,649,716,717,718,719,721,807,808,809,999] // Legends: Z-A (+ Mega Dimension)
 };
 // ===== Saved progress and app state =====
-let names=[],list=[],filter="all",store={};
+let names=[],list=[],listSections={},filter="all",store={};
 // Games left out of the National list (the user can change this with the Sources button)
 let natOff=new Set();
 try{
@@ -946,31 +946,34 @@ async function loadNames(){
   cset("names2",n);
   return n;
 }
-async function loadDexRaw(gi){
+// Loads the game's Pokédexes: one entry per dex, [{slug, ids}], each in the game's own order.
+async function loadDexParts(gi){
   const slugs=GAMES[gi][1];
-  if(slugs[0]==="national")return names.map((_,i)=>i+1);
-  const key="dex3_"+slugs.join("+");
-  {
-    const c=cget(key);
-    if(c)return c
-  }
+  if(slugs[0]==="national")return [{slug:"national",ids:names.map((_,i)=>i+1)}];
+  const key="dex4_"+slugs.join("+");
+  const cached=cget(key);
+  if(cached)return cached;
   const res=await Promise.allSettled(slugs.map(s=>getJSON(API+"pokedex/"+s)));
-  const parts=res.filter(r=>r.status==="fulfilled").map(r=>r.value);
+  const parts=[];
+  res.forEach((r,i)=>{
+    if(r.status!=="fulfilled")return;
+    const ids=[],seen=new Set();
+    [...r.value.pokemon_entries].sort((a,b)=>a.entry_number-b.entry_number).forEach(e=>{
+      const id=+e.pokemon_species.url.split("/").filter(Boolean).pop();
+      if(!seen.has(id)){
+        seen.add(id);
+        ids.push(id)
+      }
+    });
+    parts.push({slug:slugs[i],ids});
+  });
   if(!parts.length){
     const r=GAMES[gi][2];
-    if(r)return Array.from({length:r[1]-r[0]+1},(_,i)=>r[0]+i);
+    if(r)return [{slug:slugs[0],ids:Array.from({length:r[1]-r[0]+1},(_,i)=>r[0]+i)}];
     throw 0
   }
-  const seen=new Set(),l=[];
-  parts.forEach(p=>[...p.pokemon_entries].sort((a,b)=>a.entry_number-b.entry_number).forEach(e=>{
-    const id=+e.pokemon_species.url.split("/").filter(Boolean).pop();
-    if(!seen.has(id)){
-      seen.add(id);
-      l.push(id)
-    }
-  }));
-  cset(key,l);
-  return l;
+  cset(key,parts);
+  return parts;
 }
 // ===== Regional forms and Mega evolutions =====
 let view="dex",formIds=[],formMeta={};
@@ -1040,7 +1043,7 @@ const REGIONAL={
 12:{s:"alola",ids:ALOLA,mode:"replace"},
 14:{s:"galar",ids:[52,77,78,79,80,83,110,122,144,145,146,199,222,263,264,554,555,562,618],mode:"replace"},
 16:{s:"hisui",ids:[58,59,100,101,157,211,215,503,549,570,571,628,705,706,713,724],mode:"replace",custom:{550:["basculin-white-striped"]}},
-17:{s:"paldea",ids:[128,194],mode:"add"}  // Paldean form in the base game, standard form in the DLC (Kitakami)
+17:{s:"paldea",ids:[128,194],mode:"replace",skip:["kitakami","blueberry"]}  // Paldean forms in the base game; the DLC sections show the standard forms
 };
 let FB={},FN={};
 function withForms(l,conf){
@@ -1057,19 +1060,52 @@ function withForms(l,conf){
   });
   return out;
 }
+// DLC dexes shown as their own section with a heading. Key = game's position in GAMES,
+// value = { pokédex slug: heading }. The base game's dex (not listed here) gets no heading.
+const DLC_SECTIONS={
+  14:{"isle-of-armor":"Isle of Armor (DLC)","crown-tundra":"Crown Tundra (DLC)"},
+  17:{"kitakami":"The Teal Mask – Kitakami (DLC)","blueberry":"The Indigo Disk – Blueberry Academy (DLC)"},
+  18:{"hyperspace":"Mega Dimension (DLC)"}
+};
+// Species added to a DLC section even if its Pokédex does not list them (e.g. the standard Wooper and Tauros in Kitakami).
+const DLC_EXTRA={17:{kitakami:[128,194]}};
+// Returns { ids: the whole list in order, marks: { start index of each section: its heading ("" = none) } }
 async function loadDex(gi){
-  const l=await loadDexRaw(gi);
+  const parts=await loadDexParts(gi);
+  const dlc=DLC_SECTIONS[gi];
+  let sections=[];
+  const seen=new Set();
+  if(dlc){
+    // every dex is its own section; a Pokémon only appears in the first section that has it
+    parts.forEach(p=>{
+      const ids=p.ids.filter(id=>!seen.has(id));
+      ids.forEach(id=>seen.add(id));
+      ((DLC_EXTRA[gi]||{})[p.slug]||[]).forEach(id=>{if(!ids.includes(id))ids.push(id)});
+      sections.push({slug:p.slug,title:dlc[p.slug]||"",ids});
+    });
+  }else{
+    // dexes without DLC (e.g. X/Y's three regions) are merged into one list
+    const ids=[];
+    parts.forEach(p=>p.ids.forEach(id=>{if(!seen.has(id)){seen.add(id);ids.push(id)}}));
+    sections=[{slug:"",title:"",ids}];
+  }
   try{
     await loadAllForms();
     if(gi==="0"){
       await ensureForms();
-      return l.concat(formIds)
+      sections[0].ids=sections[0].ids.concat(formIds);
+    }else{
+      const conf=REGIONAL[gi];
+      if(conf)sections.forEach(sec=>{if(!(conf.skip||[]).includes(sec.slug))sec.ids=withForms(sec.ids,conf)});
     }
-    const conf=REGIONAL[gi];
-    return conf?withForms(l,conf):l;
-  }catch(e){
-    return l
-  }
+  }catch(e){}
+  const ids=[],marks={};
+  sections.forEach(sec=>{
+    if(!sec.ids.length)return;
+    marks[ids.length]=sec.title;
+    ids.push(...sec.ids);
+  });
+  return {ids,marks};
 }
 async function selectGame(){
   if(view!=="dex"){
@@ -1079,11 +1115,13 @@ async function selectGame(){
     try{
       await(mg?ensureMegas():ensureForms());
       $("msg").textContent=mg?"Tap a card when you own that Mega Stone.":"";
-      list=mg?megaIds:formIds
+      list=mg?megaIds:formIds;
+      listSections={}
     }
     catch(e){
       $("msg").textContent="Could not load forms. Check your connection and try again.";
-      list=[]
+      list=[];
+      listSections={}
     }
     render();
     return;
@@ -1091,12 +1129,15 @@ async function selectGame(){
   $("msg").textContent="Loading list…";
   $("grid").innerHTML="";
   try{
-    list=await loadDex($("game").value);
+    const d=await loadDex($("game").value);
+    list=d.ids;
+    listSections=d.marks;
     $("msg").textContent=""
   }
   catch(e){
     $("msg").textContent="Could not load this game's Pokédex – showing the National list.";
-    list=names.map((_,i)=>i+1)
+    list=names.map((_,i)=>i+1);
+    listSections={}
   }
   render();
 }
@@ -1118,15 +1159,20 @@ function render(){
   tb[1].textContent=mega?"Owned":"Caught";
   tb[3].style.display=mega?"none":"";
   if(mega&&filter==="shiny")filter="all";
-  let n=0,ns=0,h="",formsHeading=false;
+  let n=0,ns=0,h="",formsHeading=false,secStart=0,pendingTitle="";
   const national=!forms&&GAMES[gi][1][0]==="national",lock=forms?null:SHINY_LOCK[gi];
   $("natBtn").hidden=!national;
   for(const [idx,id] of list.entries()){
+    // a new section of the list starts here (the base game or a DLC)
+    if(idx in listSections){
+      secStart=idx;
+      pendingTitle=listSections[idx];
+    }
     const name=id>10000?formLabel(id):(names[id-1]||"?");
     const has=!!got[id];
     const locked=mega||lock==="all"||SHINY_GLOBAL.includes(id)||(Array.isArray(lock)&&lock.includes(id));
     const sh=got[id]===2&&!locked;
-    const num=String(idx+1);
+    const num=String(idx-secStart+1);
     if(has)n++;
     if(sh)ns++;
     if(filter==="caught"&&!has)continue;
@@ -1141,6 +1187,11 @@ function render(){
     if(q&&!matches)continue;
     const base=id>10000?formBase(id):id;
     const label=mega||national?pad(base):"#"+num.padStart(3,"0")+" · N"+base;
+    // DLC sections get their own heading, shown once their first card is visible
+    if(pendingTitle){
+      h+=`<h3 class="sec">${esc(pendingTitle)}</h3>`;
+      pendingTitle="";
+    }
     // In the National list, regional forms come last, under their own heading
     if(national&&id>10000&&!formsHeading){
       h+='<h3 class="sec">Regional forms<small>Alolan, Galarian, Hisuian and Paldean versions</small></h3>';
