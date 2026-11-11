@@ -1560,10 +1560,10 @@ async function ensureMegas(){
 // "add" = both are listed. Key = game's position in GAMES. Add new games/forms here.
 const ALOLA=[19,20,26,27,28,37,38,50,51,52,53,74,75,76,88,89,103,105];
 const REGIONAL={
-12:{s:"alola",ids:ALOLA,mode:"replace"},
-14:{s:"galar",ids:[52,77,78,79,80,83,110,122,144,145,146,199,222,263,264,554,555,562,618],mode:"replace"},
-16:{s:"hisui",ids:[58,59,100,101,157,211,215,503,549,570,571,628,705,706,713,724],mode:"replace",custom:{550:["basculin-white-striped"]}},
-17:{s:"paldea",ids:[128,194],mode:"replace",skip:["kitakami","blueberry"]}  // Paldean forms in the base game; the DLC sections show the standard forms
+12:{s:"alola",ids:ALOLA,mode:"replace",versions:["sun","moon","ultra-sun","ultra-moon"]},
+14:{s:"galar",ids:[52,77,78,79,80,83,110,122,144,145,146,199,222,263,264,554,555,562,618],mode:"replace",versions:["sword","shield"]},
+16:{s:"hisui",ids:[58,59,100,101,157,211,215,503,549,570,571,628,705,706,713,724],mode:"replace",versions:["legends-arceus"],custom:{550:["basculin-white-striped"]}},
+17:{s:"paldea",ids:[128,194],mode:"replace",versions:["scarlet","violet"],skip:["kitakami","blueberry"]}  // Paldean forms in the base game; the DLC sections show the standard forms
 };
 let FB={},FN={};
 function withForms(l,conf){
@@ -1741,6 +1741,26 @@ const pretty=t=>esc(String(t).replace(/-/g," "));
 const memo={};
 const cached=async u=>memo[u]||(memo[u]=await getJSON(API+u));
 const STAT={hp:"HP","attack":"ATK","defense":"DEF","special-attack":"SpA","special-defense":"SpD","speed":"SPE"};
+// Pokédex texts are stored per species, so a regional form and its normal version share one list of game entries.
+// REGIONAL[game].versions says which games show the regional form: the form keeps only those entries,
+// and the normal species drops them (e.g. Hisuian Arcanine only has Legends: Arceus, normal Arcanine has none of it).
+function visibleEntries(entries,id,sid){
+  if(id>10000){
+    const name=formMeta[id]||"";
+    if(MRE.test(name))return [];  // PokeAPI has no separate text for Mega Evolutions
+    const r=FRE.exec(name),only=new Set();
+    Object.values(REGIONAL).forEach(c=>{
+      const custom=c.custom&&Object.values(c.custom).some(l=>l.includes(name));
+      if((r&&c.s===r[2])||custom)c.versions.forEach(v=>only.add(v));
+    });
+    return entries.filter(e=>only.has(e.version.name));
+  }
+  const hide=new Set();
+  Object.values(REGIONAL).forEach(c=>{
+    if(c.ids.includes(sid)||(c.custom&&c.custom[sid]))c.versions.forEach(v=>hide.add(v));
+  });
+  return entries.filter(e=>!hide.has(e.version.name));
+}
 async function openDex(id){
   const body=$("dexBody"),d=$("dex");
   d.style.setProperty("--g",col(id,0));
@@ -1750,7 +1770,7 @@ async function openDex(id){
     const pk=await cached("pokemon/"+id);
     const sid=+pk.species.url.split("/").filter(Boolean).pop();
     const sp=await cached("pokemon-species/"+sid);
-    const en=sp.flavor_text_entries.filter(e=>e.language.name==="en");
+    const en=visibleEntries(sp.flavor_text_entries.filter(e=>e.language.name==="en"),id,sid);
     const genus=(sp.genera.find(g=>g.language.name==="en")||{}).genus||"";
     const tys=pk.types.map(t=>t.type.name);
     const art="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/"+id+".png";
@@ -1758,7 +1778,7 @@ async function openDex(id){
   <div><div class="dx-no">${pad(sid)}</div><h2>${id>10000?esc(formLabel(id)):pretty(names[id-1]||sp.name)}</h2><div class="dx-no">${esc(genus)}</div>
   <div class="tys">${tys.map(typePill).join("")}</div></div></div>
   ${en.length?`<select id="dexVer" aria-label="Game version">${en.map((e,i)=>`<option value="${i}">${pretty(e.version.name)}</option>`).join("")}</select>
-  <p class="dx-text" id="dexTxt"></p>`:'<p class="dx-text">No Pokédex entry available yet.</p>'}
+  <p class="dx-text" id="dexTxt"></p>`:`<p class="dx-text">${id>10000&&MRE.test(formMeta[id]||"")?"Mega Evolutions don't have their own Pokédex text here.":"No Pokédex entry available yet."}</p>`}
   <div class="dx-meta"><span><b>Height</b> ${pk.height/10} m</span><span><b>Weight</b> ${pk.weight/10} kg</span>
   <span><b>Abilities</b> ${pk.abilities.map(a=>pretty(a.ability.name)+(a.is_hidden?" (hidden)":"")).join(", ")}</span></div>
   ${pk.stats.map(x=>`<div class="st"><span>${STAT[x.stat.name]||esc(x.stat.name)}</span><b>${x.base_stat}</b><i style="width:${Math.min(100,x.base_stat/255*100)}%"></i></div>`).join("")}`;
