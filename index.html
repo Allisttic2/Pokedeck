@@ -9,6 +9,60 @@ var t=null;
 try{t=localStorage.getItem("theme")}catch(e){}
 if(t!=="light"&&t!=="dark")t=window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";
 document.documentElement.dataset.theme=t;
+
+// Banner and footer colours: presets inspired by the colours of different ball designs.
+(function(){
+  var SOFT="0 1px 2px #0004";
+  var GOLD=["#ffd23f","#fff3b0"];
+  var STYLES=[
+    {id:"red",name:"Classic Red",c1:"#e63946",c2:"#b3202d",ink:"#fff",accent:"#e63946",bar:GOLD,shadow:SOFT},
+    {id:"blue",name:"Ocean Blue",c1:"#3a86ff",c2:"#1d4ed8",ink:"#fff",accent:"#2563eb",bar:GOLD,shadow:SOFT},
+    {id:"yellow",name:"Sunny Yellow",c1:"#ffd23f",c2:"#f2a900",ink:"#1d1d22",accent:"#c27c00",bar:["#1d1d22","#3a3a44"],shadow:"none"},
+    {id:"purple",name:"Royal Purple",c1:"#8b5cf6",c2:"#6d28d9",ink:"#fff",accent:"#7c3aed",bar:GOLD,shadow:SOFT},
+    {id:"white",name:"Pearl White",c1:"#ffffff",c2:"#e5e7eb",ink:"#1d1d22",accent:"#d93a3a",bar:["#e63946","#ff7a85"],shadow:"none"},
+    {id:"midnight",name:"Midnight",c1:"#2b2d42",c2:"#14151a",ink:"#fff",accent:"#ef4444",bar:GOLD,shadow:SOFT},
+    {id:"green",name:"Forest Green",c1:"#2e9e5b",c2:"#1f7a44",ink:"#fff",accent:"#1f8a4c",bar:GOLD,shadow:SOFT},
+    {id:"pink",name:"Blossom Pink",c1:"#f472b6",c2:"#db2777",ink:"#fff",accent:"#db2777",bar:GOLD,shadow:SOFT}
+  ];
+  var KEY="style";
+  function find(id){
+    for(var i=0;i<STYLES.length;i++)if(STYLES[i].id===id)return STYLES[i];
+    return STYLES[0];
+  }
+  function get(){
+    var s={banner:"red",footer:"red"};
+    try{
+      var x=JSON.parse(localStorage.getItem(KEY)||"null");
+      if(x){s.banner=find(x.banner).id;s.footer=find(x.footer).id}
+    }catch(e){}
+    return s;
+  }
+  function apply(){
+    var s=get(),b=find(s.banner),f=find(s.footer),st=document.documentElement.style;
+    st.setProperty("--hdr1",b.c1);
+    st.setProperty("--hdr2",b.c2);
+    st.setProperty("--hdr-ink",b.ink);
+    st.setProperty("--hdr-shadow",b.shadow);
+    st.setProperty("--bar1",b.bar[0]);
+    st.setProperty("--bar2",b.bar[1]);
+    st.setProperty("--red",b.accent);
+    st.setProperty("--ftr1",f.c1);
+    st.setProperty("--ftr2",f.c2);
+    st.setProperty("--ftr-ink",f.ink);
+    var m=document.querySelector&&document.querySelector('meta[name="theme-color"]');
+    if(m)m.setAttribute("content",b.c1);
+  }
+  // part: "banner", "footer" or "both"
+  function set(part,id){
+    var s=get();
+    if(part!=="footer")s.banner=id;
+    if(part!=="banner")s.footer=id;
+    try{localStorage.setItem(KEY,JSON.stringify(s))}catch(e){}
+    apply();
+  }
+  window.pokedeckStyle={list:STYLES,get:get,set:set,apply:apply};
+  apply();
+})();
 </script>
 <title>Pokedeck</title>
 <meta name="description" content="Track every Pokémon you catch across all the games, including shinies, regional forms and Mega Stones.">
@@ -37,7 +91,15 @@ document.documentElement.dataset.theme=t;
   --ink: #22232a;
   --mut: #767782;
   --red: #e63946;
-  --red2: #b3202d;
+  --hdr1: #e63946;
+  --hdr2: #b3202d;
+  --hdr-ink: #fff;
+  --hdr-shadow: 0 1px 2px #0004;
+  --bar1: #ffd23f;
+  --bar2: #fff3b0;
+  --ftr1: #e63946;
+  --ftr2: #b3202d;
+  --ftr-ink: #fff;
   --ok: #2e9e5b;
   --bd: #e6e1d6;
   --gold: #f2b705;
@@ -88,9 +150,9 @@ body {
 header {
   position: relative;
   overflow: hidden;
-  color: #fff;
+  color: var(--hdr-ink);
   padding: 18px 16px 20px;
-  background: linear-gradient(135deg,var(--red),var(--red2));
+  background: linear-gradient(135deg,var(--hdr1),var(--hdr2));
   border-bottom: 6px solid #1d1d22;
   box-shadow: 0 4px 16px rgba(0,0,0,.2);
 }
@@ -137,7 +199,7 @@ select:focus,input:focus {
 
 .bar {
   height: 14px;
-  background: #0003;
+  background: color-mix(in srgb,var(--hdr-ink) 22%,transparent);
   border-radius: 8px;
   overflow: hidden;
   margin-top: 14px;
@@ -148,7 +210,7 @@ select:focus,input:focus {
   display: block;
   height: 100%;
   width: 0;
-  background: linear-gradient(90deg,#ffd23f,#fff3b0);
+  background: linear-gradient(90deg,var(--bar1),var(--bar2));
   transition: width .4s;
 }
 
@@ -156,7 +218,7 @@ select:focus,input:focus {
   margin-top: 8px;
   font-weight: 700;
   font-size: 14px;
-  text-shadow: 0 1px 2px #0004;
+  text-shadow: var(--hdr-shadow);
 }
 
 /* ===== Filter tabs and search ===== */
@@ -313,16 +375,16 @@ select:focus,input:focus {
 
 .about {
   padding: 6px 14px;
-  border: 2px solid #fff8;
+  border: 2px solid color-mix(in srgb,var(--hdr-ink) 55%,transparent);
   border-radius: 999px;
-  background: #0002;
-  color: #fff;
+  background: color-mix(in srgb,var(--hdr-ink) 14%,transparent);
+  color: var(--hdr-ink);
   font: 600 14px var(--font-head);
   cursor: pointer;
 }
 
 .about:hover {
-  background: #0004;
+  background: color-mix(in srgb,var(--hdr-ink) 26%,transparent);
 }
 
 .sec {
@@ -708,13 +770,424 @@ dialog button {
   color: var(--mut);
 }
 
+/* ===== Header buttons and creator updates ===== */
+.hbtns {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.about.icon {
+  position: relative;
+  padding: 6px 10px;
+}
+
+.about.icon svg {
+  display: block;
+  width: 18px;
+  height: 18px;
+}
+
+.dot {
+  position: absolute;
+  top: 0;
+  right: 2px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: #ffd23f;
+  border: 2px solid #1d1d22;
+}
+
+.upd-item {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--bd);
+}
+
+.upd-item:last-of-type {
+  border-bottom: 0;
+}
+
+.upd-date {
+  color: var(--mut);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.upd-item h3 {
+  margin: 2px 0 4px;
+}
+
+.upd-item p {
+  margin: 0;
+}
+
+@media (max-width:520px) {
+  .hbtns {
+    position: static;
+    justify-content: flex-end;
+    margin-bottom: 10px;
+  }
+}
+
+/* ===== Pop-up windows (About and Pokédex entry) ===== */
+dialog {
+  max-width: 480px;
+  width: calc(100% - 32px);
+  border: 2px solid var(--bd);
+  border-radius: 18px;
+  background: var(--card);
+  color: var(--ink);
+  padding: 20px 22px;
+  box-shadow: 0 20px 50px rgba(0,0,0,.35);
+  font-size: 15px;
+}
+
+dialog::backdrop {
+  background: rgba(0,0,0,.55);
+}
+
+dialog h2 {
+  margin: 0 0 8px;
+  font: 600 22px var(--font-head);
+}
+
+dialog h3 {
+  margin: 16px 0 4px;
+  font: 600 16px var(--font-head);
+  color: var(--red);
+}
+
+dialog p,dialog ul {
+  margin: 0 0 6px;
+}
+
+dialog ul {
+  padding-left: 20px;
+}
+
+dialog a {
+  color: var(--red);
+}
+
+dialog button {
+  margin-top: 14px;
+  padding: 9px 20px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--red);
+  color: #fff;
+  font: 600 15px var(--font-head);
+  cursor: pointer;
+}
+
+.tys {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  margin-top: 5px;
+  min-height: 17px;
+  flex-wrap: wrap;
+}
+
+.ty {
+  font-style: normal;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  color: #fff;
+  line-height: 1.5;
+}
+
+.ty.lt {
+  color: #1d1d22;
+}
+
+.c.got b::before {
+  content: "✓ ";
+  color: var(--ok);
+  font-weight: 700;
+}
+
+.inf {
+  position: absolute;
+  top: 8px;
+  left: 6px;
+  width: 24px;
+  height: 24px;
+  border: 0;
+  border-radius: 50%;
+  background: color-mix(in srgb,var(--g) 22%,transparent);
+  color: var(--ink);
+  font: 700 14px var(--font-head);
+  cursor: pointer;
+  padding: 0;
+  line-height: 24px;
+}
+
+.inf:hover {
+  background: var(--g);
+  color: #fff;
+}
+
+#dex {
+  max-width: 520px;
+}
+
+.dx-top {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+}
+
+.dx-top img {
+  width: 120px;
+  height: 120px;
+  object-fit: contain;
+  flex: none;
+  background: radial-gradient(circle,color-mix(in srgb,var(--g) 30%,transparent),transparent 70%);
+}
+
+.dx-top h2 {
+  margin: 0;
+  text-transform: capitalize;
+}
+
+.dx-no {
+  color: var(--mut);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.dx-top .tys {
+  justify-content: flex-start;
+}
+
+.dx-text {
+  margin: 14px 0 6px;
+  min-height: 3.2em;
+  font-style: italic;
+}
+
+#dexVer {
+  padding: 6px 10px;
+  border-radius: 10px;
+  font-size: 13px;
+  box-shadow: none;
+  border: 2px solid var(--bd);
+  width: auto;
+  margin: 0 0 4px;
+}
+
+.dx-meta {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin: 8px 0;
+  font-size: 14px;
+}
+
+.st {
+  display: grid;
+  grid-template-columns: 34px 30px 1fr;
+  gap: 6px;
+  align-items: center;
+  font-size: 12px;
+  margin: 3px 0;
+}
+
+.st i {
+  display: block;
+  height: 8px;
+  border-radius: 4px;
+  background: var(--g);
+}
+
+.sr {
+  display: flex;
+  gap: 8px;
+}
+
+.qwrap {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.qwrap input {
+  padding-right: 42px;
+}
+
+#qClear {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  transform: translateY(-50%);
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--bd);
+  color: var(--ink);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+#qClear:hover {
+  background: var(--red);
+  color: #fff;
+}
+
+#typeBtn,
+#natBtn {
+  flex: 0 0 auto;
+  padding: 11px 16px;
+  border: 2px solid var(--bd);
+  border-radius: 14px;
+  background: var(--card);
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+  box-shadow: var(--sh);
+}
+
+#typeBtn.on,
+#natBtn.on {
+  border-color: var(--red);
+  color: var(--red);
+  font-weight: 700;
+}
+
+.srcrow {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 6px 0;
+  cursor: pointer;
+}
+
+.srcrow input {
+  width: auto;
+  padding: 0;
+  border: 0;
+  box-shadow: none;
+  accent-color: var(--red);
+}
+
+#natList {
+  max-height: 45vh;
+  margin-top: 8px;
+  overflow: auto;
+}
+
+#typeChips {
+  padding-top: 10px;
+}
+
+#chipList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chip {
+  padding: 5px 12px;
+  border: 2px solid var(--c);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink);
+  font: 600 13px var(--font-head);
+  text-transform: capitalize;
+  cursor: pointer;
+}
+
+.chip.on {
+  background: var(--c);
+  color: #fff;
+}
+
+.chip.on.lt {
+  color: #1d1d22;
+}
+
+.chipctl {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.chipctl button {
+  padding: 5px 14px;
+  border: 2px solid var(--bd);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--ink);
+  font: 600 13px var(--font-head);
+  cursor: pointer;
+}
+
+#msg {
+  padding: 16px;
+  color: var(--mut);
+}
+
+.swrow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 8px 0;
+}
+
+.sw {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 74px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: 600 11px var(--font-body);
+  cursor: pointer;
+}
+
+.sw i {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 3px solid #1d1d22;
+  box-shadow: var(--sh);
+}
+
+.sw.on i {
+  outline: 3px solid var(--red);
+  outline-offset: 2px;
+}
+
+dialog summary {
+  margin: 10px 0 4px;
+  color: var(--red);
+  font-weight: 700;
+  cursor: pointer;
+}
+
 /* ===== Footer ===== */
 footer {
   margin-top: 8px;
   padding: 24px 16px calc(32px + env(safe-area-inset-bottom, 0px));
   border-top: 6px solid #1d1d22;
-  background: linear-gradient(135deg, var(--red), var(--red2));
-  color: rgba(255,255,255,.92);
+  background: linear-gradient(135deg, var(--ftr1), var(--ftr2));
+  color: color-mix(in srgb,var(--ftr-ink) 92%,transparent);
   font-size: 13px;
   line-height: 1.5;
 }
@@ -724,13 +1197,13 @@ footer .wrap > * {
 }
 
 footer strong {
-  color: #fff;
+  color: var(--ftr-ink);
   font-family: var(--font-head);
   font-size: 15px;
 }
 
 footer a {
-  color: #fff;
+  color: var(--ftr-ink);
   font-weight: 700;
 }
 
@@ -738,7 +1211,7 @@ footer button {
   padding: 0;
   border: 0;
   background: none;
-  color: #fff;
+  color: var(--ftr-ink);
   font: inherit;
   font-weight: 700;
   text-decoration: underline;
@@ -750,6 +1223,7 @@ footer button {
 <header><div class="wrap">
 <h1><svg class="logo" viewBox="0 0 100 100" aria-hidden="true"><rect x='3' y='3' width='94' height='94' rx='24' fill='#e63946' stroke='#1d1d22' stroke-width='5'/><g stroke-linecap='round' stroke-linejoin='round' fill='none'><g transform='rotate(-7 30 50)'><path d='M20 74V26h9a11 11 0 0 1 0 22H20' stroke='#1d1d22' stroke-width='25'/></g><g transform='translate(0 2) rotate(6 66 50)'><path d='M56 26h4a18 24 0 0 1 0 48h-4z' stroke='#1d1d22' stroke-width='25'/></g><g transform='rotate(-7 30 50)'><path d='M20 74V26h9a11 11 0 0 1 0 22H20' stroke='#ffd23f' stroke-width='13'/><path d='M18 33V43' stroke='#ffffff' opacity='.85' stroke-width='3.5'/></g><g transform='translate(0 2) rotate(6 66 50)'><path d='M56 26h4a18 24 0 0 1 0 48h-4z' stroke='#ffd23f' stroke-width='13'/><path d='M54 35V45' stroke='#ffffff' stroke-width='3.5' opacity='.85'/></g></g><path d='M86 5l2.2 6.8L95 14l-6.8 2.2L86 23l-2.2-6.8L77 14l6.8-2.2z' fill='#ffffff' stroke='#1d1d22' stroke-width='2.5' stroke-linejoin='round'/></svg>Pokedeck</h1>
 <div class="hbtns">
+<button id="styleBtn" class="about icon" type="button" aria-label="Choose banner and footer colours" title="Colours"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 0 0 0 18c1.1 0 2-.9 2-2 0-.5-.2-1-.5-1.3-.3-.3-.5-.8-.5-1.2 0-1.1.9-2 2-2h2.3A3.9 3.9 0 0 0 21 10.6C21 6.3 17 3 12 3z" fill="currentColor"/><circle cx="7.5" cy="11" r="1.4" style="fill:var(--hdr1)"/><circle cx="10.5" cy="7" r="1.4" style="fill:var(--hdr1)"/><circle cx="15" cy="7.5" r="1.4" style="fill:var(--hdr1)"/></svg></button>
 <button id="themeBtn" class="about icon" type="button" aria-label="Switch between light and dark mode" title="Light / dark mode"><svg class="ico-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z" fill="currentColor"/></svg><svg class="ico-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="currentColor"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
 <button id="updBtn" class="about icon" type="button" aria-label="What's new" title="What's new" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a6 6 0 0 0-6 6v3.5L4 16v1h16v-1l-2-3.5V9a6 6 0 0 0-6-6zm-2 16a2 2 0 0 0 4 0z" fill="currentColor"/></svg><span id="updDot" class="dot" hidden></span></button>
 <button id="aboutBtn" class="about" type="button">About</button>
@@ -788,6 +1262,19 @@ footer button {
 <div class="chipctl"><button id="natAll" type="button">All games</button><button id="natNone" type="button">No games</button></div>
 <div id="natList"></div>
 <button id="natClose" type="button">Close</button>
+</dialog>
+<dialog id="styleDlg">
+<h2>Colours</h2>
+<p>Pick a style for the banner and the footer. Your choice is saved in this browser.</p>
+<div class="swrow" id="swBoth"></div>
+<details>
+<summary>Choose banner and footer separately</summary>
+<h3>Banner</h3>
+<div class="swrow" id="swBanner"></div>
+<h3>Footer</h3>
+<div class="swrow" id="swFooter"></div>
+</details>
+<button id="styleClose" type="button">Close</button>
 </dialog>
 <dialog id="about">
 <h2>About Pokedeck</h2>
@@ -1342,6 +1829,29 @@ $("natNone").onclick=()=>setAllNatSources(false);
 $("natClose").onclick=()=>$("natDlg").close();
 $("natDlg").onclick=e=>{if(e.target===$("natDlg"))$("natDlg").close()};
 updateNatBtn();
+// ===== Banner and footer colours (the presets live in the small script at the top of the page) =====
+const PS=typeof window!=="undefined"&&window.pokedeckStyle||{list:[],get:()=>({}),set(){},apply(){}};
+function swatchRow(part,activeId){
+  return PS.list.map(s=>`<button type="button" class="sw${s.id===activeId?" on":""}" data-part="${part}" data-id="${s.id}"><i style="background:linear-gradient(135deg,${s.c1},${s.c2})"></i>${esc(s.name)}</button>`).join("");
+}
+function buildStyleDlg(){
+  const cur=PS.get();
+  $("swBoth").innerHTML=swatchRow("both",cur.banner===cur.footer?cur.banner:"");
+  $("swBanner").innerHTML=swatchRow("banner",cur.banner);
+  $("swFooter").innerHTML=swatchRow("footer",cur.footer);
+}
+$("styleBtn").onclick=()=>{buildStyleDlg();$("styleDlg").showModal()};
+$("styleDlg").onclick=e=>{
+  const b=e.target.closest&&e.target.closest(".sw");
+  if(b){
+    PS.set(b.dataset.part,b.dataset.id);
+    buildStyleDlg();
+    return;
+  }
+  if(e.target===$("styleDlg"))$("styleDlg").close();
+};
+$("styleClose").onclick=()=>$("styleDlg").close();
+PS.apply(); // also sets the browser bar colour now that the page is ready
 $("aboutBtn").onclick=()=>$("about").showModal();
 $("footAbout").onclick=()=>$("about").showModal();
 $("aboutClose").onclick=()=>$("about").close();
