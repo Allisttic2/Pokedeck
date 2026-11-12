@@ -216,6 +216,7 @@ select:focus,input:focus {
 
 #stat {
   margin-top: 8px;
+  white-space: pre-line;
   font-weight: 700;
   font-size: 14px;
   text-shadow: var(--hdr-shadow);
@@ -1643,6 +1644,7 @@ async function selectGame(){
   render();
 }
 // ===== Drawing the list =====
+const sectionLabel=t=>t?t.replace(" (DLC)","").split(" – ")[0]:"Base game";
 function render(){
   const forms=view!=="dex",mega=view==="mega",gi=forms?view:$("game").value;
   store[gi]=store[gi]||{};
@@ -1661,6 +1663,7 @@ function render(){
   tb[3].style.display=mega?"none":"";
   if(mega&&filter==="shiny")filter="all";
   let n=0,ns=0,h="",formsHeading=false,secStart=0,pendingTitle="";
+  const secs=[];  // caught / total per section (base game and DLCs)
   const national=!forms&&GAMES[gi][1][0]==="national",lock=forms?null:SHINY_LOCK[gi];
   $("natBtn").hidden=!national;
   for(const [idx,id] of list.entries()){
@@ -1668,6 +1671,7 @@ function render(){
     if(idx in listSections){
       secStart=idx;
       pendingTitle=listSections[idx];
+      secs.push({title:listSections[idx],caught:0,total:0});
     }
     const name=id>10000?formLabel(id):(names[id-1]||"?");
     const has=!!got[id];
@@ -1675,6 +1679,10 @@ function render(){
     const sh=got[id]===2&&!locked;
     const num=String(idx-secStart+1);
     if(has)n++;
+    if(secs.length){
+      secs[secs.length-1].total++;
+      if(has)secs[secs.length-1].caught++;
+    }
     if(sh)ns++;
     if(filter==="caught"&&!has)continue;
     if(filter==="missing"&&has)continue;
@@ -1714,7 +1722,9 @@ function render(){
   const t=list.length||1;
   $("fill").style.width=(n/t*100)+"%";
   const pct=Math.round(n/t*100);
-  $("stat").textContent=mega?`${n} of ${list.length} Mega Stones owned (${pct}%)`:`${n} of ${list.length} caught (${pct}%) · ${ns} shiny`;
+  // games with DLC: a second line splits the count between the base game and each DLC
+  const split=secs.length>1?"\n"+secs.map(x=>`${sectionLabel(x.title)} ${x.caught}/${x.total}`).join(" · "):"";
+  $("stat").textContent=mega?`${n} of ${list.length} Mega Stones owned (${pct}%)`:`${n} of ${list.length} caught (${pct}%) · ${ns} shiny${split}`;
 }
 // ===== Pokédex entry window =====
 const esc=t=>String(t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
