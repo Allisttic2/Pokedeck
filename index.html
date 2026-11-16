@@ -1388,6 +1388,7 @@ GAMES.forEach((g,i)=>$("game").add(new Option(g[0],i)));
   b.textContent=t;
   b.dataset.k=k;
   b.onclick=()=>{
+    pendingScroll=null;
     filter=k;
     render()
   };
@@ -1725,6 +1726,11 @@ function render(){
   // games with DLC: a second line splits the count between the base game and each DLC
   const split=secs.length>1?"\n"+secs.map(x=>`${sectionLabel(x.title)} ${x.caught}/${x.total}`).join(" · "):"";
   $("stat").textContent=mega?`${n} of ${list.length} Mega Stones owned (${pct}%)`:`${n} of ${list.length} caught (${pct}%) · ${ns} shiny${split}`;
+  if(pendingScroll!==null&&list.length&&typeof window!=="undefined"&&window.scrollTo){
+    window.scrollTo(0,pendingScroll);
+    pendingScroll=null;
+  }
+  saveLast();
 }
 // ===== Pokédex entry window =====
 const esc=t=>String(t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -1893,6 +1899,7 @@ $("about").onclick=e=>{
   b.textContent=t;
   b.dataset.k=k;
   b.onclick=()=>{
+    pendingScroll=null;
     view=k;
     $("game").style.display=k==="dex"?"":"none";
     selectGame()
@@ -1936,7 +1943,10 @@ $("typeClear").onclick=()=>{
   updateTypeBtn();
   render();
 };
-$("game").onchange=selectGame;
+$("game").onchange=()=>{
+  pendingScroll=null;
+  selectGame();
+};
 // Search box: the x button clears it (so does Escape)
 function updateClearBtn(){
   $("qClear").hidden=!$("q").value;
@@ -1989,6 +1999,37 @@ $("updBtn").onclick=showUpdates;
 $("updClose").onclick=()=>$("updates").close();
 $("updates").onclick=e=>{if(e.target===$("updates"))$("updates").close()};
 loadUpdates();
+// ===== Remember where you were (view, game, filter tab and scroll position) =====
+const LAST_KEY="lastView";
+let pendingScroll=null;  // scroll position to restore once the list has loaded
+function saveLast(){
+  if(pendingScroll!==null)return;  // not restored yet, so don't overwrite what was saved
+  try{
+    localStorage.setItem(LAST_KEY,JSON.stringify({
+      view,
+      game:$("game").value,
+      filter,
+      scroll:typeof window!=="undefined"?window.scrollY||0:0
+    }));
+  }catch(e){}
+}
+(function restoreLast(){
+  let s=null;
+  try{s=JSON.parse(localStorage.getItem(LAST_KEY)||"null")}catch(e){}
+  if(!s)return;
+  if(s.view==="mega")view="mega";
+  if(GAMES[+s.game]&&String(+s.game)===String(s.game))$("game").value=s.game;
+  if(["all","caught","missing","shiny"].includes(s.filter))filter=s.filter;
+  $("game").style.display=view==="dex"?"":"none";
+  if(typeof s.scroll==="number"&&s.scroll>0)pendingScroll=s.scroll;
+})();
+if(typeof history!=="undefined"&&"scrollRestoration" in history)history.scrollRestoration="manual";
+let scrollTimer;
+addEventListener("scroll",()=>{
+  clearTimeout(scrollTimer);
+  scrollTimer=setTimeout(saveLast,300);
+},{passive:true});
+addEventListener("pagehide",saveLast);
 loadTypes().then(t=>{
   types=t;
   render()
