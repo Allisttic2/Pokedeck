@@ -1182,6 +1182,21 @@ dialog summary {
   cursor: pointer;
 }
 
+/* ===== Search and filters stay visible while scrolling ===== */
+#controls {
+  position: sticky;
+  top: env(safe-area-inset-top, 0px);
+  z-index: 20;
+  padding-bottom: 8px;
+  background: var(--bg);
+  border-bottom: 2px solid var(--bd);
+}
+
+#controls #typeChips {
+  max-height: 40vh;
+  overflow: auto;
+}
+
 /* ===== Footer ===== */
 footer {
   margin-top: 8px;
@@ -1235,11 +1250,13 @@ footer button {
 </div></header>
 <div class="wrap">
 <div class="tabs" id="views"></div>
+<div id="controls">
 <div class="tabs" id="tabs" style="padding-top:0"></div>
-<div class="s sr"><div class="qwrap"><input id="q" placeholder="Search name, number or type…"><button id="qClear" type="button" aria-label="Clear search" hidden>×</button></div><button id="typeBtn" type="button" aria-expanded="false">Types</button><button id="natBtn" type="button" hidden>Sources</button></div>
+<div class="s sr"><div class="qwrap"><input id="q" placeholder="Name, number or type…"><button id="qClear" type="button" aria-label="Clear search" hidden>×</button></div><button id="typeBtn" type="button" aria-expanded="false">Types</button><button id="natBtn" type="button" hidden>Sources</button></div>
 <div class="s" id="typeChips" hidden>
 <div id="chipList"></div>
 <div class="chipctl"><button id="typeMode" type="button">Match: any</button><button id="typeClear" type="button">Clear</button></div>
+</div>
 </div>
 <div id="msg">Loading Pokémon…</div>
 <div id="grid"></div>
