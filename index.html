@@ -388,6 +388,19 @@ select:focus,input:focus {
   background: color-mix(in srgb,var(--hdr-ink) 26%,transparent);
 }
 
+.ver {
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--v);
+  color: #fff;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 700;
+  letter-spacing: .4px;
+  line-height: 1.5;
+  text-transform: uppercase;
+}
+
 .sec {
   grid-column: 1 / -1;
   margin: 14px 0 0;
@@ -1432,6 +1445,28 @@ async function loadTypes(){
   return m;
 }
 const LIGHT=["electric","ice","ground","steel","normal","fairy"]; // types with light colours get dark text
+// ===== Version exclusives (which game of a pair a Pokémon can only be caught in) =====
+// Key = the game's position in GAMES, then version name -> colour and National Dex numbers. Source: Serebii.net.
+// To add a game, add one entry here (and EXCLUSIVE_FORMS below for exclusive regional forms).
+const EXCLUSIVES={
+  17:{
+    Scarlet:{color:"#d9382f",ids:[37,38,207,246,247,248,408,409,425,426,434,435,472,633,634,635,690,691,765,845,874,936,984,985,986,987,988,989,1005,1007,1009,1020,1021]},
+    Violet:{color:"#7c4dff",ids:[27,28,190,200,316,317,371,372,373,410,411,424,429,692,693,766,875,877,885,886,887,937,990,991,992,993,994,995,1006,1008,1010,1022,1023]}
+  }
+};
+// Exclusive regional forms, matched by their PokeAPI name (the Paldean Tauros breeds)
+const EXCLUSIVE_FORMS={
+  17:{"tauros-paldea-blaze-breed":"Scarlet","tauros-paldea-aqua-breed":"Violet"}
+};
+function exclusiveOf(gi,id){
+  const g=EXCLUSIVES[gi];
+  if(!g)return null;
+  const byForm=id>10000?(EXCLUSIVE_FORMS[gi]||{})[formMeta[id]]:null;
+  for(const name in g){
+    if(byForm===name||(id<=10000&&g[name].ids.includes(id)))return {name,color:g[name].color};
+  }
+  return null;
+}
 const typePill=t=>`<em class="ty${LIGHT.includes(t)?" lt":""}" style="background:${TC[t]}">${t}</em>`;
 const col=(id,i)=>{
   const t=types[id]||[];
@@ -1710,7 +1745,8 @@ function render(){
       const ok=typeMode==="all"?[...tsel].every(t=>pt.includes(t)):[...tsel].some(t=>pt.includes(t));
       if(!ok)continue;
     }
-    const matches=name.toLowerCase().includes(q)||(types[id]||[]).some(t=>t&&t.includes(q))||num===qNum||String(id)===qNum;
+    const ex=exclusiveOf(gi,id);  // {name,color} if only one version of this game has it
+    const matches=name.toLowerCase().includes(q)||(ex&&ex.name.toLowerCase().includes(q))||(types[id]||[]).some(t=>t&&t.includes(q))||num===qNum||String(id)===qNum;
     if(q&&!matches)continue;
     const base=id>10000?formBase(id):id;
     const label=mega||national?pad(base):"#"+num.padStart(3,"0")+" · N"+base;
@@ -1725,7 +1761,8 @@ function render(){
       formsHeading=true;
     }
     const shinyBtn=locked?"":`<button class="sh" title="Shiny" aria-label="Mark as shiny">${STAR}</button>`;
-    const pills=(types[id]||[]).filter(Boolean).map(typePill).join("");
+    const exPill=ex?`<em class="ver" style="--v:${ex.color}">${esc(ex.name)} exclusive</em>`:"";
+    const pills=(types[id]||[]).filter(Boolean).map(typePill).join("")+exPill;
     h+=`<div class="c${has?" got":""}${sh?" shiny":""}" data-n="${id}" style="--g:${col(id,0)};--g2:${col(id,1)}">
       <i class="tp"></i>
       <button class="inf" title="Pokédex entry" aria-label="Open Pokédex entry">i</button>
@@ -1787,13 +1824,14 @@ async function openDex(id){
     const en=visibleEntries(sp.flavor_text_entries.filter(e=>e.language.name==="en"),id,sid);
     const genus=(sp.genera.find(g=>g.language.name==="en")||{}).genus||"";
     const tys=pk.types.map(t=>t.type.name);
+    const exInfo=view==="dex"?exclusiveOf($("game").value,id):null;
     const art="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/"+id+".png";
     body.innerHTML=`<div class="dx-top"><img alt="" src="${art}" onerror="this.onerror=function(){this.onerror=null;this.src=PH};this.src='${SPR(id)}'">
   <div><div class="dx-no">${pad(sid)}</div><h2>${id>10000?esc(formLabel(id)):pretty(names[id-1]||sp.name)}</h2><div class="dx-no">${esc(genus)}</div>
   <div class="tys">${tys.map(typePill).join("")}</div></div></div>
   ${en.length?`<select id="dexVer" aria-label="Game version">${en.map((e,i)=>`<option value="${i}">${pretty(e.version.name)}</option>`).join("")}</select>
   <p class="dx-text" id="dexTxt"></p>`:`<p class="dx-text">${id>10000&&MRE.test(formMeta[id]||"")?"Mega Evolutions don't have their own Pokédex text here.":"No Pokédex entry available yet."}</p>`}
-  <div class="dx-meta"><span><b>Height</b> ${pk.height/10} m</span><span><b>Weight</b> ${pk.weight/10} kg</span>
+  <div class="dx-meta">${exInfo?`<span><b>Exclusive to</b> ${esc(exInfo.name)}</span>`:""}<span><b>Height</b> ${pk.height/10} m</span><span><b>Weight</b> ${pk.weight/10} kg</span>
   <span><b>Abilities</b> ${pk.abilities.map(a=>pretty(a.ability.name)+(a.is_hidden?" (hidden)":"")).join(", ")}</span></div>
   ${pk.stats.map(x=>`<div class="st"><span>${STAT[x.stat.name]||esc(x.stat.name)}</span><b>${x.base_stat}</b><i style="width:${Math.min(100,x.base_stat/255*100)}%"></i></div>`).join("")}`;
     if(en.length){
