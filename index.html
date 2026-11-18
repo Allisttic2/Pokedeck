@@ -1449,6 +1449,18 @@ const LIGHT=["electric","ice","ground","steel","normal","fairy"]; // types with 
 // Key = the game's position in GAMES, then version name -> colour and National Dex numbers. Source: Serebii.net.
 // To add a game, add one entry here (and EXCLUSIVE_FORMS below for exclusive regional forms).
 const EXCLUSIVES={
+  1:{
+    Red:{color:"#d9382f",ids:[23,24,43,44,45,56,57,58,59,123,125]},
+    Blue:{color:"#2f6fe0",ids:[27,28,37,38,52,53,69,70,71,126,127]}
+  },
+  2:{
+    Gold:{color:"#bf8a00",ids:[56,57,58,59,167,168,207,216,217,226]},
+    Silver:{color:"#76808f",ids:[37,38,52,53,165,166,225,227,231,232]}
+  },
+  14:{
+    Sword:{color:"#2f7fe0",ids:[127,138,139,250,273,274,275,303,338,371,372,373,381,383,483,559,560,574,575,576,627,628,633,634,635,641,643,684,685,692,693,716,766,776,782,783,784,791,841,865,874,888]},
+    Shield:{color:"#d4244f",ids:[140,141,214,246,247,248,249,270,271,272,302,337,380,382,443,444,445,453,454,484,577,578,579,629,630,642,644,682,683,690,691,704,705,706,717,765,780,792,842,864,875,889]}
+  },
   17:{
     Scarlet:{color:"#d9382f",ids:[37,38,207,246,247,248,408,409,425,426,434,435,472,633,634,635,690,691,765,845,874,936,984,985,986,987,988,989,1005,1007,1009,1020,1021]},
     Violet:{color:"#7c4dff",ids:[27,28,190,200,316,317,371,372,373,410,411,424,429,692,693,766,875,877,885,886,887,937,990,991,992,993,994,995,1006,1008,1010,1022,1023]}
@@ -1456,6 +1468,7 @@ const EXCLUSIVES={
 };
 // Exclusive regional forms, matched by their PokeAPI name (the Paldean Tauros breeds)
 const EXCLUSIVE_FORMS={
+  14:{"farfetchd-galar":"Sword","darumaka-galar":"Sword","darmanitan-galar-standard":"Sword","ponyta-galar":"Shield","rapidash-galar":"Shield","corsola-galar":"Shield"},
   17:{"tauros-paldea-blaze-breed":"Scarlet","tauros-paldea-aqua-breed":"Violet"}
 };
 function exclusiveOf(gi,id){
