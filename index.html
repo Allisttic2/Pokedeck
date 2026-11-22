@@ -1392,7 +1392,7 @@ const SHINY_LOCK={
   18: [150,382,383,384,485,491,647,648,649,716,717,718,719,721,807,808,809,999] // Legends: Z-A (+ Mega Dimension)
 };
 // ===== Saved progress and app state =====
-let names=[],list=[],listSections={},filter="all",store={};
+let names=[],list=[],listNums=[],listSections={},filter="all",store={};
 // Games left out of the National list (the user can change this with the Sources button)
 let natOff=new Set();
 try{
@@ -1447,6 +1447,8 @@ async function loadTypes(){
 const LIGHT=["electric","ice","ground","steel","normal","fairy"]; // types with light colours get dark text
 // ===== Version exclusives (which game of a pair a Pokémon can only be caught in) =====
 // Key = the game's position in GAMES, then version name -> colour and National Dex numbers. Source: Serebii.net.
+// "label" (optional) is the shorter text shown on the card when the version name is long.
+// Sun/Moon and Ultra Sun/Ultra Moon share one game here: "Sun" means exclusive to Sun and Ultra Sun, "Ultra Sun" only to Ultra Sun (same for Moon).
 // To add a game, add one entry here (and EXCLUSIVE_FORMS below for exclusive regional forms).
 const EXCLUSIVES={
   1:{
@@ -1489,9 +1491,19 @@ const EXCLUSIVES={
     "Omega Ruby":{color:"#b3202d",ids:[140,141,250,273,274,275,303,335,338,383,410,411,484,538,566,567,641,643,690,691]},
     "Alpha Sapphire":{color:"#1f4fb0",ids:[138,139,249,270,271,272,302,336,337,382,408,409,483,539,564,565,642,644,692,693]}
   },
+  12:{
+    "Sun / Ultra Sun":{label:"Sun",color:"#e8890c",ids:[37,38,408,409,546,547,564,565,627,628,766,776,791,794,798]},
+    "Ultra Sun":{label:"Ultra Sun",color:"#d9480f",ids:[138,139,228,229,243,250,347,348,381,383,483,485,622,623,641,643,692,693,696,697,716,806]},
+    "Moon / Ultra Moon":{label:"Moon",color:"#4c6ef5",ids:[27,28,410,411,548,549,566,567,629,630,765,780,792,795,797]},
+    "Ultra Moon":{label:"Ultra Moon",color:"#364fc7",ids:[140,141,244,249,309,310,343,344,345,346,380,382,484,486,642,644,690,691,698,699,717,805]}
+  },
   13:{
     Pikachu:{color:"#c99700",ids:[27,28,43,44,45,56,57,58,88,89,123]},
     Eevee:{color:"#9a6a3a",ids:[23,24,37,38,52,53,69,70,71,109,110,127]}
+  },
+  15:{
+    "Brilliant Diamond":{label:"Diamond",color:"#3b82c4",ids:[10,11,12,23,24,58,59,86,87,123,125,198,207,212,239,243,244,245,246,247,248,250,273,274,275,303,335,338,352,408,409,430,434,435,466,472,483]},
+    "Shining Pearl":{label:"Pearl",color:"#d6619b",ids:[13,14,15,27,28,37,38,79,80,126,127,144,145,146,199,200,216,217,234,240,249,270,271,272,302,336,337,371,372,373,410,411,429,431,432,467,484]}
   },
   14:{
     Sword:{color:"#2f7fe0",ids:[127,138,139,250,273,274,275,303,338,371,372,373,381,383,483,559,560,574,575,576,627,628,633,634,635,641,643,684,685,692,693,716,766,776,782,783,784,791,841,865,874,888]},
@@ -1512,7 +1524,7 @@ function exclusiveOf(gi,id){
   if(!g)return null;
   const byForm=id>10000?(EXCLUSIVE_FORMS[gi]||{})[formMeta[id]]:null;
   for(const name in g){
-    if(byForm===name||(id<=10000&&g[name].ids.includes(id)))return {name,color:g[name].color};
+    if(byForm===name||(id<=10000&&g[name].ids.includes(id)))return {name,color:g[name].color,label:g[name].label||name};
   }
   return null;
 }
@@ -1550,30 +1562,35 @@ async function loadNames(){
   cset("names2",n);
   return n;
 }
-// Loads the game's Pokédexes: one entry per dex, [{slug, ids}], each in the game's own order.
+// Loads the game's Pokédexes: one entry per dex, [{slug, ids, nums}]: the Pokémon in the game's own order
+// and, in parallel, each one's own number in that Pokédex (the number the game shows).
 async function loadDexParts(gi){
   const slugs=GAMES[gi][1];
-  if(slugs[0]==="national")return [{slug:"national",ids:names.map((_,i)=>i+1)}];
-  const key="dex4_"+slugs.join("+");
+  if(slugs[0]==="national")return [{slug:"national",ids:names.map((_,i)=>i+1),nums:null}];
+  const key="dex5_"+slugs.join("+");
   const cached=cget(key);
   if(cached)return cached;
   const res=await Promise.allSettled(slugs.map(s=>getJSON(API+"pokedex/"+s)));
   const parts=[];
   res.forEach((r,i)=>{
     if(r.status!=="fulfilled")return;
-    const ids=[],seen=new Set();
+    const ids=[],nums=[],seen=new Set();
     [...r.value.pokemon_entries].sort((a,b)=>a.entry_number-b.entry_number).forEach(e=>{
       const id=+e.pokemon_species.url.split("/").filter(Boolean).pop();
       if(!seen.has(id)){
         seen.add(id);
-        ids.push(id)
+        ids.push(id);
+        nums.push(e.entry_number)
       }
     });
-    parts.push({slug:slugs[i],ids});
+    parts.push({slug:slugs[i],ids,nums});
   });
   if(!parts.length){
     const r=GAMES[gi][2];
-    if(r)return [{slug:slugs[0],ids:Array.from({length:r[1]-r[0]+1},(_,i)=>r[0]+i)}];
+    if(r){
+      const ids=Array.from({length:r[1]-r[0]+1},(_,i)=>r[0]+i);
+      return [{slug:slugs[0],ids,nums:ids.map((_,i)=>i+1)}];
+    }
     throw 0
   }
   cset(key,parts);
@@ -1650,17 +1667,17 @@ const REGIONAL={
 17:{s:"paldea",ids:[128,194],mode:"replace",versions:["scarlet","violet"],skip:["kitakami","blueberry"]}  // Paldean forms in the base game; the DLC sections show the standard forms
 };
 let FB={},FN={};
-function withForms(l,conf){
+function withForms(items,conf){
   const out=[];
-  l.forEach(id=>{
-    const slug=(names[id-1]||"").replace(/ /g,"-");
-    const f=conf.ids.includes(id)?(FB[slug+"|"+conf.s]||[]):((conf.custom&&conf.custom[id]||[]).map(n=>FN[n]).filter(Boolean));
+  items.forEach(it=>{
+    const slug=(names[it.id-1]||"").replace(/ /g,"-");
+    const f=conf.ids.includes(it.id)?(FB[slug+"|"+conf.s]||[]):((conf.custom&&conf.custom[it.id]||[]).map(n=>FN[n]).filter(Boolean));
     if(!f.length){
-      out.push(id);
+      out.push(it);
       return
     }
-    if(conf.mode==="add")out.push(id);
-    out.push(...f);
+    if(conf.mode==="add")out.push(it);
+    f.forEach(fid=>out.push({id:fid,num:it.num}));  // all forms share the number of their species
   });
   return out;
 }
@@ -1673,7 +1690,8 @@ const DLC_SECTIONS={
 };
 // Species added to a DLC section even if its Pokédex does not list them (e.g. the standard Wooper and Tauros in Kitakami).
 const DLC_EXTRA={17:{kitakami:[128,194]}};
-// Returns { ids: the whole list in order, marks: { start index of each section: its heading ("" = none) } }
+// Returns { ids: the whole list in order, nums: each one's number in the game's Pokédex (null = unknown),
+//           marks: { start index of each section: its heading ("" = none) } }
 async function loadDex(gi){
   const parts=await loadDexParts(gi);
   const dlc=DLC_SECTIONS[gi];
@@ -1682,34 +1700,51 @@ async function loadDex(gi){
   if(dlc){
     // every dex is its own section; a Pokémon only appears in the first section that has it
     parts.forEach(p=>{
-      const ids=p.ids.filter(id=>!seen.has(id));
-      ids.forEach(id=>seen.add(id));
-      ((DLC_EXTRA[gi]||{})[p.slug]||[]).forEach(id=>{if(!ids.includes(id))ids.push(id)});
-      sections.push({slug:p.slug,title:dlc[p.slug]||"",ids});
+      const items=[];
+      p.ids.forEach((id,i)=>{
+        if(seen.has(id))return;
+        seen.add(id);
+        items.push({id,num:p.nums?p.nums[i]:null});
+      });
+      ((DLC_EXTRA[gi]||{})[p.slug]||[]).forEach(id=>{
+        if(items.some(it=>it.id===id))return;
+        const k=p.ids.indexOf(id);
+        items.push({id,num:k>=0&&p.nums?p.nums[k]:null});
+      });
+      sections.push({slug:p.slug,title:dlc[p.slug]||"",items});
     });
   }else{
-    // dexes without DLC (e.g. X/Y's three regions) are merged into one list
-    const ids=[];
-    parts.forEach(p=>p.ids.forEach(id=>{if(!seen.has(id)){seen.add(id);ids.push(id)}}));
-    sections=[{slug:"",title:"",ids}];
+    // dexes without DLC: a single dex keeps its own numbers; several dexes (X/Y's three regions) are merged and numbered 1, 2, 3...
+    const items=[];
+    let k=0;
+    parts.forEach(p=>p.ids.forEach((id,i)=>{
+      if(seen.has(id))return;
+      seen.add(id);
+      k++;
+      items.push({id,num:parts.length===1&&p.nums?p.nums[i]:k});
+    }));
+    sections=[{slug:"",title:"",items}];
   }
   try{
     await loadAllForms();
     if(gi==="0"){
       await ensureForms();
-      sections[0].ids=sections[0].ids.concat(formIds);
+      sections[0].items=sections[0].items.concat(formIds.map(id=>({id,num:null})));
     }else{
       const conf=REGIONAL[gi];
-      if(conf)sections.forEach(sec=>{if(!(conf.skip||[]).includes(sec.slug))sec.ids=withForms(sec.ids,conf)});
+      if(conf)sections.forEach(sec=>{if(!(conf.skip||[]).includes(sec.slug))sec.items=withForms(sec.items,conf)});
     }
   }catch(e){}
-  const ids=[],marks={};
+  const ids=[],nums=[],marks={};
   sections.forEach(sec=>{
-    if(!sec.ids.length)return;
+    if(!sec.items.length)return;
     marks[ids.length]=sec.title;
-    ids.push(...sec.ids);
+    sec.items.forEach(it=>{
+      ids.push(it.id);
+      nums.push(it.num);
+    });
   });
-  return {ids,marks};
+  return {ids,nums,marks};
 }
 async function selectGame(){
   if(view!=="dex"){
@@ -1720,11 +1755,13 @@ async function selectGame(){
       await(mg?ensureMegas():ensureForms());
       $("msg").textContent=mg?"Tap a card when you own that Mega Stone.":"";
       list=mg?megaIds:formIds;
+      listNums=[];
       listSections={}
     }
     catch(e){
       $("msg").textContent="Could not load forms. Check your connection and try again.";
       list=[];
+      listNums=[];
       listSections={}
     }
     render();
@@ -1735,12 +1772,14 @@ async function selectGame(){
   try{
     const d=await loadDex($("game").value);
     list=d.ids;
+    listNums=d.nums;
     listSections=d.marks;
     $("msg").textContent=""
   }
   catch(e){
     $("msg").textContent="Could not load this game's Pokédex – showing the National list.";
     list=names.map((_,i)=>i+1);
+    listNums=[];
     listSections={}
   }
   render();
@@ -1779,7 +1818,7 @@ function render(){
     const has=!!got[id];
     const locked=mega||lock==="all"||SHINY_GLOBAL.includes(id)||(Array.isArray(lock)&&lock.includes(id));
     const sh=got[id]===2&&!locked;
-    const num=String(idx-secStart+1);
+    const num=listNums[idx]===null?"—":String(listNums[idx]!==undefined?listNums[idx]:idx-secStart+1);  // the game's own number
     if(has)n++;
     if(secs.length){
       secs[secs.length-1].total++;
@@ -1795,10 +1834,10 @@ function render(){
       if(!ok)continue;
     }
     const ex=exclusiveOf(gi,id);  // {name,color} if only one version of this game has it
-    const matches=name.toLowerCase().includes(q)||(ex&&(ex.name+" exclusive").toLowerCase().includes(q))||(types[id]||[]).some(t=>t&&t.includes(q))||num===qNum||String(id)===qNum;
+    const matches=name.toLowerCase().includes(q)||(ex&&(ex.name+" "+ex.label+" exclusive").toLowerCase().includes(q))||(types[id]||[]).some(t=>t&&t.includes(q))||num===qNum||String(id)===qNum;
     if(q&&!matches)continue;
     const base=id>10000?formBase(id):id;
-    const label=mega||national?pad(base):"#"+num.padStart(3,"0")+" · N"+base;
+    const label=mega||national?pad(base):"#"+(num==="—"?num:num.padStart(3,"0"))+" · N"+base;
     // DLC sections get their own heading, shown once their first card is visible
     if(pendingTitle){
       h+=`<h3 class="sec">${esc(pendingTitle)}</h3>`;
@@ -1810,7 +1849,7 @@ function render(){
       formsHeading=true;
     }
     const shinyBtn=locked?"":`<button class="sh" title="Shiny" aria-label="Mark as shiny">${STAR}</button>`;
-    const exPill=ex?`<em class="ver" style="--v:${ex.color}">${esc(ex.name)} exclusive</em>`:"";
+    const exPill=ex?`<em class="ver" style="--v:${ex.color}">${esc(ex.label)} exclusive</em>`:"";
     const pills=(types[id]||[]).filter(Boolean).map(typePill).join("")+exPill;
     h+=`<div class="c${has?" got":""}${sh?" shiny":""}" data-n="${id}" style="--g:${col(id,0)};--g2:${col(id,1)}">
       <i class="tp"></i>
